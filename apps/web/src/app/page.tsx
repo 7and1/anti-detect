@@ -580,8 +580,8 @@ export default function HomePage() {
             ? {
                 trustScore: result.overall,
                 grade: result.grade,
-                criticalIssues: result.criticalIssues,
-                warnings: result.warnings,
+                criticalIssues: result.criticalIssues.map((issue) => issue.message),
+                warnings: result.warnings.map((warning) => warning.message),
               }
             : undefined
         }

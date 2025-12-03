@@ -384,64 +384,6 @@ export default function GeneratorPage() {
   );
 }
 
-// Mock fingerprint generation for demo
-function generateMockFingerprint(os?: string, browser?: string, quality?: string): GeneratedFingerprint {
-  const selectedOs = os || ['Windows', 'macOS', 'Linux'][Math.floor(Math.random() * 3)];
-  const selectedBrowser = browser || ['Chrome', 'Firefox', 'Safari'][Math.floor(Math.random() * 3)];
-
-  const screens: Record<string, { width: number; height: number }[]> = {
-    Windows: [{ width: 1920, height: 1080 }, { width: 2560, height: 1440 }],
-    macOS: [{ width: 1440, height: 900 }, { width: 2560, height: 1600 }],
-    Linux: [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }],
-    Android: [{ width: 412, height: 915 }, { width: 360, height: 780 }],
-    iOS: [{ width: 390, height: 844 }, { width: 414, height: 896 }],
-  };
-
-  const gpus: Record<string, string[]> = {
-    Windows: ['NVIDIA GeForce RTX 3080', 'AMD Radeon RX 6800 XT', 'NVIDIA GeForce GTX 1660'],
-    macOS: ['Apple M2 Pro', 'Apple M1', 'AMD Radeon Pro 5500M'],
-    Linux: ['NVIDIA GeForce RTX 3070', 'Mesa Intel UHD Graphics 630'],
-  };
-
-  const screen = screens[selectedOs]?.[Math.floor(Math.random() * (screens[selectedOs]?.length || 1))] || { width: 1920, height: 1080 };
-  const gpu = gpus[selectedOs]?.[Math.floor(Math.random() * (gpus[selectedOs]?.length || 1))] || 'Generic GPU';
-
-  const qualityScore = quality === 'verified' ? 90 + Math.floor(Math.random() * 10) :
-                       quality === 'premium' ? 70 + Math.floor(Math.random() * 20) :
-                       50 + Math.floor(Math.random() * 20);
-
-  return {
-    id: Math.floor(Math.random() * 100000),
-    hash: `fp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`,
-    userAgent: `Mozilla/5.0 (${selectedOs === 'Windows' ? 'Windows NT 10.0; Win64; x64' : selectedOs === 'macOS' ? 'Macintosh; Intel Mac OS X 10_15_7' : 'X11; Linux x86_64'}) AppleWebKit/537.36 (KHTML, like Gecko) ${selectedBrowser}/120.0.0.0 Safari/537.36`,
-    platform: selectedOs === 'Windows' ? 'Win32' : selectedOs === 'macOS' ? 'MacIntel' : 'Linux x86_64',
-    screen: {
-      width: screen.width,
-      height: screen.height,
-      devicePixelRatio: selectedOs === 'macOS' || selectedOs === 'iOS' ? 2 : 1,
-    },
-    hardware: {
-      hardwareConcurrency: [4, 8, 12, 16][Math.floor(Math.random() * 4)],
-      deviceMemory: [4, 8, 16, 32][Math.floor(Math.random() * 4)],
-      maxTouchPoints: ['Android', 'iOS'].includes(selectedOs) ? 5 : 0,
-    },
-    webgl: {
-      vendor: selectedOs === 'macOS' ? 'Apple Inc.' : 'Google Inc.',
-      renderer: gpu,
-    },
-    locale: {
-      timezone: ['America/New_York', 'America/Los_Angeles', 'Europe/London', 'Europe/Berlin'][Math.floor(Math.random() * 4)],
-      languages: ['en-US', 'en'],
-    },
-    fonts: ['Arial', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana'],
-    metadata: {
-      qualityScore,
-      os: selectedOs,
-      browser: selectedBrowser,
-    },
-  };
-}
-
 function generatePuppeteerCode(fp: GeneratedFingerprint): string {
   return `const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
