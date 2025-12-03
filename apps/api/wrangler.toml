@@ -3,10 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Environment variables
+# Environment variables (default/development)
 [vars]
-ENVIRONMENT = "production"
-CORS_ORIGIN = "https://anti-detect.com"
+ENVIRONMENT = "development"
+CORS_ORIGIN = "http://localhost:3000"
 TURNSTILE_SITE_KEY = "0x4AAAAAAA..." # Replace with your Cloudflare Turnstile site key
 
 # NOTE: TURNSTILE_SECRET should be set via wrangler secret:
@@ -37,11 +37,6 @@ id = "d8a25b02d2d248e3bdc81e9fd6af67b3"
 binding = "R2"
 bucket_name = "anti-detect-reports"
 
-# Routes
-[[routes]]
-pattern = "api.anti-detect.com/*"
-zone_name = "anti-detect.com"
-
 # Cron triggers
 [triggers]
 crons = [
@@ -54,23 +49,80 @@ crons = [
 enabled = true
 head_sampling_rate = 0.1
 
+# ============================================
 # Production environment
+# ============================================
 [env.production]
 name = "anti-detect-api"
+
 [env.production.vars]
 ENVIRONMENT = "production"
-CORS_ORIGIN = "https://anti-detect.com"
+CORS_ORIGIN = "https://anti-detect-web.pages.dev"
+TURNSTILE_SITE_KEY = "0x4AAAAAAA..."
 
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "anti-detect"
+database_id = "d19c7a11-4ae5-4bef-bd65-05a2133a5371"
+
+[[env.production.kv_namespaces]]
+binding = "IP_CACHE"
+id = "06d882d1a9a946dbaf6204a542d5df58"
+
+[[env.production.kv_namespaces]]
+binding = "JA3_DB"
+id = "6a013dac92704342a9f59317eabe956d"
+
+[[env.production.kv_namespaces]]
+binding = "RATE_LIMITS"
+id = "d8a25b02d2d248e3bdc81e9fd6af67b3"
+
+[[env.production.r2_buckets]]
+binding = "R2"
+bucket_name = "anti-detect-reports"
+
+# Routes will be added once custom domain is configured
+# [[env.production.routes]]
+# pattern = "api.anti-detect.com/*"
+# zone_name = "anti-detect.com"
+
+# ============================================
 # Staging environment
+# ============================================
 [env.staging]
 name = "anti-detect-api-staging"
+
 [env.staging.vars]
 ENVIRONMENT = "staging"
-CORS_ORIGIN = "https://staging.anti-detect.com"
+CORS_ORIGIN = "https://staging.anti-detect-web.pages.dev"
 
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "anti-detect"
+database_id = "d19c7a11-4ae5-4bef-bd65-05a2133a5371"
+
+[[env.staging.kv_namespaces]]
+binding = "IP_CACHE"
+id = "06d882d1a9a946dbaf6204a542d5df58"
+
+[[env.staging.kv_namespaces]]
+binding = "JA3_DB"
+id = "6a013dac92704342a9f59317eabe956d"
+
+[[env.staging.kv_namespaces]]
+binding = "RATE_LIMITS"
+id = "d8a25b02d2d248e3bdc81e9fd6af67b3"
+
+[[env.staging.r2_buckets]]
+binding = "R2"
+bucket_name = "anti-detect-reports"
+
+# ============================================
 # Development environment
+# ============================================
 [env.dev]
 name = "anti-detect-api-dev"
+
 [env.dev.vars]
 ENVIRONMENT = "development"
 CORS_ORIGIN = "http://localhost:3000"

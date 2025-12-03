@@ -55,7 +55,7 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
-      url: ${{ github.ref == 'refs/heads/main' && 'https://api.anti-detect.com' || 'https://api-staging.anti-detect.com' }}
+      url: ${{ github.ref == 'refs/heads/main' && 'https://anti-detect-api.workers.dev' || 'https://anti-detect-api-staging.workers.dev' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -92,7 +92,7 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
-      url: ${{ github.ref == 'refs/heads/main' && 'https://anti-detect.com' || 'https://staging.anti-detect.com' }}
+      url: ${{ github.ref == 'refs/heads/main' && 'https://anti-detect-web.pages.dev' || 'https://staging.anti-detect-web.pages.dev' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -117,8 +117,8 @@ jobs:
       - name: Build Web App
         run: pnpm --filter=@anti-detect/web build
         env:
-          NEXT_PUBLIC_API_URL: ${{ github.ref == 'refs/heads/main' && 'https://api.anti-detect.com' || 'https://api-staging.anti-detect.com' }}
-          NEXT_PUBLIC_SITE_URL: ${{ github.ref == 'refs/heads/main' && 'https://anti-detect.com' || 'https://staging.anti-detect.com' }}
+          NEXT_PUBLIC_API_URL: ${{ github.ref == 'refs/heads/main' && 'https://anti-detect-api.workers.dev' || 'https://anti-detect-api-staging.workers.dev' }}
+          NEXT_PUBLIC_SITE_URL: ${{ github.ref == 'refs/heads/main' && 'https://anti-detect-web.pages.dev' || 'https://staging.anti-detect-web.pages.dev' }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: deepseek/deepseek-chat-v3.1:free
 
@@ -169,8 +169,8 @@ jobs:
       - name: Build Web App
         run: pnpm --filter=@anti-detect/web build
         env:
-          NEXT_PUBLIC_API_URL: https://api-staging.anti-detect.com
-          NEXT_PUBLIC_SITE_URL: https://preview.anti-detect.com
+          NEXT_PUBLIC_API_URL: https://anti-detect-api-staging.workers.dev
+          NEXT_PUBLIC_SITE_URL: https://preview.anti-detect-web.pages.dev
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: deepseek/deepseek-chat-v3.1:free
 
