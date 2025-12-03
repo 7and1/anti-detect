@@ -1,0 +1,10 @@
+export { collectNavigator } from './navigator';
+export { collectScreen } from './screen';
+export { collectWebGL } from './webgl';
+export { collectCanvas } from './canvas';
+export { collectAudio } from './audio';
+export { collectFonts } from './fonts';
+export { collectTimezone } from './timezone';
+export { collectPlugins } from './plugins';
+export { collectWebRTC } from './webrtc';
+export { collectAutomation } from './automation';

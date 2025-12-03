@@ -1,0 +1,13 @@
+# Cloudflare Workers Development Variables
+# Copy this file to .dev.vars and fill in your values
+
+# Cloudflare Turnstile
+# Get your keys at: https://dash.cloudflare.com/turnstile
+# For development, use test keys:
+TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+
+# CORS Origin
+CORS_ORIGIN=http://localhost:3000
+
+# Environment
+ENVIRONMENT=development

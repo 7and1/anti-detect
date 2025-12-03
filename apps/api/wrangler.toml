@@ -1,0 +1,71 @@
+name = "anti-detect-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+CORS_ORIGIN = "https://anti-detect.com"
+TURNSTILE_SITE_KEY = "0x4AAAAAAA..." # Replace with your Cloudflare Turnstile site key
+
+# NOTE: TURNSTILE_SECRET should be set via wrangler secret:
+# wrangler secret put TURNSTILE_SECRET
+# This keeps the secret out of version control
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "anti-detect"
+database_id = "YOUR_D1_DATABASE_ID"  # Replace after creation
+
+# KV Namespaces
+[[kv_namespaces]]
+binding = "IP_CACHE"
+id = "YOUR_KV_ID"  # Replace after creation
+
+[[kv_namespaces]]
+binding = "JA3_DB"
+id = "YOUR_KV_ID"  # Replace after creation
+
+[[kv_namespaces]]
+binding = "RATE_LIMITS"
+id = "YOUR_KV_ID"  # Replace after creation
+
+# R2 Bucket
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "anti-detect-reports"
+
+# Routes
+[[routes]]
+pattern = "api.anti-detect.com/*"
+zone_name = "anti-detect.com"
+
+# Cron triggers
+[triggers]
+crons = [
+  "0 0 * * *",   # Daily at midnight - cleanup expired reports
+  "0 1 * * *",  # Daily at 1 AM - aggregate analytics
+]
+
+# Observability
+[observability]
+enabled = true
+head_sampling_rate = 0.1
+
+# Staging environment
+[env.staging]
+name = "anti-detect-api-staging"
+[env.staging.vars]
+ENVIRONMENT = "staging"
+CORS_ORIGIN = "https://staging.anti-detect.com"
+
+# Development environment
+[env.dev]
+name = "anti-detect-api-dev"
+[env.dev.vars]
+ENVIRONMENT = "development"
+CORS_ORIGIN = "http://localhost:3000"
+# In development, Turnstile verification is skipped if secret not configured
+# Set TURNSTILE_SECRET via wrangler secret put TURNSTILE_SECRET --env dev to enable
