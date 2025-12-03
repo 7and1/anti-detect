@@ -121,11 +121,24 @@ const nextConfig: NextConfig = {
   },
 
   // Rewrites for API proxy to Cloudflare Worker
+  // Note: /api/ai/* routes are handled by Next.js API routes (not proxied)
   async rewrites() {
     return [
       {
-        source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/:path*`,
+        source: '/api/scan/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/scan/:path*`,
+      },
+      {
+        source: '/api/report/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/report/:path*`,
+      },
+      {
+        source: '/api/ip/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/ip/:path*`,
+      },
+      {
+        source: '/api/tls/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/tls/:path*`,
       },
     ];
   },
