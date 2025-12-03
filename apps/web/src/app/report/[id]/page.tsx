@@ -11,7 +11,7 @@ interface ReportData {
   id: string;
   createdAt: string;
   trustScore: number;
-  grade: string;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
   fingerprint: {
     navigator: {
       userAgent: string;

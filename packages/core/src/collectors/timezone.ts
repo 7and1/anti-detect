@@ -27,7 +27,7 @@ export async function collectTimezone(): Promise<TimezoneData> {
 
 function estimateTimezoneFromOffset(offset: number): string {
   // Common timezone mappings by offset
-  const offsetMap: Record<number, string> = {
+  const offsetMap: Record<string, string> = {
     0: 'UTC',
     60: 'Europe/Paris',
     120: 'Europe/Athens',

@@ -123,13 +123,13 @@ function extractIP(candidate: string): string | null {
   // ICE candidate format: "candidate:... <priority> <ip> <port> ..."
   const match = candidate.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
   if (match) {
-    return match[1];
+    return match[1] ?? null;
   }
 
   // IPv6
   const ipv6Match = candidate.match(/([a-f0-9:]+:+[a-f0-9]+)/i);
   if (ipv6Match) {
-    return ipv6Match[1];
+    return ipv6Match[1] ?? null;
   }
 
   return null;

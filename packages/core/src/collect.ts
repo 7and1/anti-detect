@@ -78,7 +78,7 @@ export async function collect(
 
   await Promise.all(
     collectors.map(async (key) => {
-      const collector = collectorMap[key];
+      const collector = collectorMap[key as keyof typeof collectorMap];
       if (collector) {
         (results as any)[key] = await collector();
       }

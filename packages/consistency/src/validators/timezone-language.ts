@@ -136,7 +136,7 @@ export const timezoneLanguageRules: ConsistencyRule[] = [
       const tz = data.fingerprint.timezone.name;
 
       // Extract language code
-      const langCode = lang.split('-')[0];
+      const langCode = lang.split('-')[0] || lang;
 
       // Check for obvious mismatches
       // Japanese timezone with non-Asian language

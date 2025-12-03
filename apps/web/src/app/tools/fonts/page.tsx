@@ -106,7 +106,7 @@ export default function FontsPage() {
           }
         }
 
-        if (detected) {
+        if (detected && font) {
           detectedFonts.push(font);
         }
 

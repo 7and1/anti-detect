@@ -1,4 +1,4 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://anti-detect.com';
 

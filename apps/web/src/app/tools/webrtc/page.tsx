@@ -132,7 +132,7 @@ export default function WebRTCPage() {
 
   const extractIP = (candidate: string): string | null => {
     const match = candidate.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
-    return match ? match[1] : null;
+    return match ? (match[1] ?? null) : null;
   };
 
   const isPrivateIP = (ip: string): boolean => {

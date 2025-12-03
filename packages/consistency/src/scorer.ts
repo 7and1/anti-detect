@@ -142,7 +142,7 @@ function calculateNetworkScore(
       name: 'WebRTC Leak',
       status: hasLeak ? 'fail' : 'pass',
       value: hasLeak,
-      message: hasLeak ? 'WebRTC is leaking your real IP' : null,
+      message: hasLeak ? 'WebRTC is leaking your real IP' : undefined,
     });
     if (hasLeak) score -= 25;
   }
@@ -155,7 +155,7 @@ function calculateNetworkScore(
       name: 'IP Type',
       status: isProxy ? 'warn' : 'pass',
       value: ipInfo.ipType,
-      message: isProxy ? `IP detected as ${ipInfo.ipType}` : null,
+      message: isProxy ? `IP detected as ${ipInfo.ipType}` : undefined,
     });
     if (ipInfo.isProxy) score -= 15;
     if (ipInfo.isVPN) score -= 10;
@@ -282,7 +282,7 @@ function calculateGraphicsScore(fingerprint: FingerprintData): LayerScore {
       name: 'Canvas Fingerprint',
       status: isNoisy ? 'warn' : 'pass',
       value: fingerprint.canvas.hash.slice(0, 16) + '...',
-      message: isNoisy ? 'Canvas noise detected' : null,
+      message: isNoisy ? 'Canvas noise detected' : undefined,
     });
     if (isNoisy) score -= 5; // Canvas protection is not necessarily bad
   }
@@ -309,7 +309,7 @@ function calculateGraphicsScore(fingerprint: FingerprintData): LayerScore {
       status: isSwiftShader || isLLVMpipe ? 'fail' : 'pass',
       value: renderer,
       message: isSwiftShader ? 'SwiftShader detected (headless indicator)' :
-               isLLVMpipe ? 'LLVMpipe detected (software renderer)' : null,
+               isLLVMpipe ? 'LLVMpipe detected (software renderer)' : undefined,
     });
 
     if (isSwiftShader || isLLVMpipe) score -= 30;
@@ -341,7 +341,7 @@ function calculateAudioScore(fingerprint: FingerprintData): LayerScore {
       name: 'Audio Fingerprint',
       status: isError ? 'warn' : 'pass',
       value: isError ? 'Not available' : hash.slice(0, 16) + '...',
-      message: isError ? 'Audio fingerprint not available' : null,
+      message: isError ? 'Audio fingerprint not available' : undefined,
     });
 
     if (isError) score -= 10;
@@ -371,7 +371,7 @@ function calculateFontsScore(fingerprint: FingerprintData): LayerScore {
     name: 'Fonts Count',
     status: fonts.count < 10 ? 'warn' : 'pass',
     value: fonts.count,
-    message: fonts.count < 10 ? 'Low font count detected' : null,
+    message: fonts.count < 10 ? 'Low font count detected' : undefined,
   });
 
   if (fonts.count < 10) score -= 15;
@@ -407,7 +407,7 @@ function calculateLocaleScore(fingerprint: FingerprintData): LayerScore {
     name: 'Timezone',
     status: tz.name === 'Unknown' ? 'warn' : 'pass',
     value: tz.name,
-    message: tz.name === 'Unknown' ? 'Timezone could not be detected' : null,
+    message: tz.name === 'Unknown' ? 'Timezone could not be detected' : undefined,
   });
 
   if (tz.name === 'Unknown') score -= 10;
@@ -451,7 +451,7 @@ function calculateAutomationScore(fingerprint: FingerprintData): LayerScore {
     name: 'WebDriver Flag',
     status: auto.webdriver ? 'fail' : 'pass',
     value: auto.webdriver,
-    message: auto.webdriver ? 'Automation detected via navigator.webdriver' : null,
+    message: auto.webdriver ? 'Automation detected via navigator.webdriver' : undefined,
   });
   if (auto.webdriver) score -= 30;
 
@@ -461,7 +461,7 @@ function calculateAutomationScore(fingerprint: FingerprintData): LayerScore {
     name: 'CDP Traces',
     status: auto.cdpTraces ? 'fail' : 'pass',
     value: auto.cdpTraces,
-    message: auto.cdpTraces ? 'Chrome DevTools Protocol traces detected' : null,
+    message: auto.cdpTraces ? 'Chrome DevTools Protocol traces detected' : undefined,
   });
   if (auto.cdpTraces) score -= 30;
 
@@ -471,7 +471,7 @@ function calculateAutomationScore(fingerprint: FingerprintData): LayerScore {
     name: 'Selenium',
     status: auto.selenium ? 'fail' : 'pass',
     value: auto.selenium,
-    message: auto.selenium ? 'Selenium WebDriver detected' : null,
+    message: auto.selenium ? 'Selenium WebDriver detected' : undefined,
   });
   if (auto.selenium) score -= 30;
 

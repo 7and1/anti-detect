@@ -540,7 +540,7 @@ function formatMessage(content: string): React.ReactNode {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if (!line.trim()) {
+    if (!line || !line.trim()) {
       elements.push(<br key={`br-${i}`} />);
       continue;
     }
