@@ -119,6 +119,8 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: ${{ github.ref == 'refs/heads/main' && 'https://api.anti-detect.com' || 'https://api-staging.anti-detect.com' }}
           NEXT_PUBLIC_SITE_URL: ${{ github.ref == 'refs/heads/main' && 'https://anti-detect.com' || 'https://staging.anti-detect.com' }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: deepseek/deepseek-chat-v3.1:free
 
       - name: Build for Cloudflare Pages
         run: pnpm --filter=@anti-detect/web build:cf
@@ -169,6 +171,8 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: https://api-staging.anti-detect.com
           NEXT_PUBLIC_SITE_URL: https://preview.anti-detect.com
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: deepseek/deepseek-chat-v3.1:free
 
       - name: Build for Cloudflare Pages
         run: pnpm --filter=@anti-detect/web build:cf
