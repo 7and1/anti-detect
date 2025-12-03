@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'edge';
+
 export async function GET(request: NextRequest) {
   // Extract all headers from the request
   const headers: Record<string, string> = {};

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+
+export const runtime = 'edge';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/ui/Header';
