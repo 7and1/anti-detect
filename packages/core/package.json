@@ -9,7 +9,6 @@
     "./collectors": "./src/collectors/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },

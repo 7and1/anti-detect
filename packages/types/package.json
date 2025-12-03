@@ -7,9 +7,7 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  },
+  "scripts": {},
   "devDependencies": {
     "typescript": "^5.3.0"
   }
