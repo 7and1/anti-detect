@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { Header } from '@/components/ui/Header';
 import { Footer } from '@/components/ui/Footer';
 

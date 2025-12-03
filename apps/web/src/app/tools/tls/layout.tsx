@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'TLS Fingerprint Test - JA3/JA4 SSL Fingerprinting | Anti-detect.com',

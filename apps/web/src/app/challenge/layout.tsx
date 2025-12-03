@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Fingerprint Challenge Arena | Test Your Anti-Detection Setup | Anti-detect.com',

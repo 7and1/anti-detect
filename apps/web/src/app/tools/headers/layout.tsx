@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'HTTP Headers Test - Check Browser Headers & User Agent | Anti-detect.com',

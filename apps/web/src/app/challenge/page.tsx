@@ -27,7 +27,7 @@ interface ChallengeResult {
 
 export default function ChallengePage() {
   const [status, setStatus] = useState<ChallengeStatus>('idle');
-  const [currentLevel, setCurrentLevel] = useState(0);
+  const [_currentLevel, setCurrentLevel] = useState(0);
   const [levels, setLevels] = useState<Level[]>([
     {
       id: 1,
@@ -306,7 +306,7 @@ export default function ChallengePage() {
 
           {/* Challenge Levels */}
           <div className="space-y-4 mb-8">
-            {levels.map((level, index) => (
+            {levels.map((level) => (
               <div
                 key={level.id}
                 className={`p-6 rounded-lg border transition-all ${

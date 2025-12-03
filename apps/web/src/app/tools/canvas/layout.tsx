@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Canvas Fingerprint Test - Detect Canvas Tracking | Anti-detect.com',

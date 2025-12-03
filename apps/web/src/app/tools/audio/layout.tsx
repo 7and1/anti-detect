@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Audio Fingerprint Test - AudioContext Tracking Detection | Anti-detect.com',

@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'IP Leak Test & Geolocation Check - What\'s My IP? | Anti-detect.com',

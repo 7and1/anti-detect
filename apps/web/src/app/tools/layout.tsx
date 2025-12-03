@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Browser Fingerprinting Testing Tools | Comprehensive Privacy Suite | Anti-detect.com',

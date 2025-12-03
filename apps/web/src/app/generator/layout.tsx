@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Browser Fingerprint Profile Generator | Create Realistic Browser Profiles | Anti-detect.com',
