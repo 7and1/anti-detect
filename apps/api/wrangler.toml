@@ -8,6 +8,8 @@ compatibility_flags = ["nodejs_compat"]
 ENVIRONMENT = "development"
 CORS_ORIGIN = "http://localhost:3000"
 TURNSTILE_SITE_KEY = "0x4AAAAAAA..." # Replace with your Cloudflare Turnstile site key
+WEBHOOK_SIGNING_SECRET = "local-dev-signing-key"
+API_KEYS = "dev-api-key"
 
 # NOTE: TURNSTILE_SECRET should be set via wrangler secret:
 # wrangler secret put TURNSTILE_SECRET
@@ -32,6 +34,10 @@ id = "6a013dac92704342a9f59317eabe956d"
 binding = "RATE_LIMITS"
 id = "d8a25b02d2d248e3bdc81e9fd6af67b3"
 
+[[kv_namespaces]]
+binding = "TASK_QUEUE"
+id = "4e012345678901234567890123456789"
+
 # R2 Bucket
 [[r2_buckets]]
 binding = "R2"
@@ -42,6 +48,7 @@ bucket_name = "anti-detect-reports"
 crons = [
   "0 0 * * *",   # Daily at midnight - cleanup expired reports
   "0 1 * * *",  # Daily at 1 AM - aggregate analytics
+  "*/5 * * * *",  # Automation dispatcher & queue draining
 ]
 
 # Observability
@@ -59,6 +66,8 @@ name = "anti-detect-api"
 ENVIRONMENT = "production"
 CORS_ORIGIN = "https://anti-detect-web.pages.dev"
 TURNSTILE_SITE_KEY = "0x4AAAAAAA..."
+WEBHOOK_SIGNING_SECRET = "change-me"
+API_KEYS = ""
 
 [[env.production.d1_databases]]
 binding = "DB"
@@ -76,6 +85,10 @@ id = "6a013dac92704342a9f59317eabe956d"
 [[env.production.kv_namespaces]]
 binding = "RATE_LIMITS"
 id = "d8a25b02d2d248e3bdc81e9fd6af67b3"
+
+[[env.production.kv_namespaces]]
+binding = "TASK_QUEUE"
+id = "4e012345678901234567890123456789"
 
 [[env.production.r2_buckets]]
 binding = "R2"
@@ -95,6 +108,8 @@ name = "anti-detect-api-staging"
 [env.staging.vars]
 ENVIRONMENT = "staging"
 CORS_ORIGIN = "https://staging.anti-detect-web.pages.dev"
+WEBHOOK_SIGNING_SECRET = "staging-signing-key"
+API_KEYS = ""
 
 [[env.staging.d1_databases]]
 binding = "DB"
@@ -113,6 +128,10 @@ id = "6a013dac92704342a9f59317eabe956d"
 binding = "RATE_LIMITS"
 id = "d8a25b02d2d248e3bdc81e9fd6af67b3"
 
+[[env.staging.kv_namespaces]]
+binding = "TASK_QUEUE"
+id = "4e012345678901234567890123456789"
+
 [[env.staging.r2_buckets]]
 binding = "R2"
 bucket_name = "anti-detect-reports"
@@ -126,5 +145,6 @@ name = "anti-detect-api-dev"
 [env.dev.vars]
 ENVIRONMENT = "development"
 CORS_ORIGIN = "http://localhost:3000"
+WEBHOOK_SIGNING_SECRET = "local-dev-signing-key"
 # In development, Turnstile verification is skipped if secret not configured
 # Set TURNSTILE_SECRET via wrangler secret put TURNSTILE_SECRET --env dev to enable

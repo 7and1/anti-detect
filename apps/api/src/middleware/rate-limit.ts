@@ -1,5 +1,6 @@
 import { Context, Next } from 'hono';
 import type { Env } from '../index';
+import { jsonError } from '../lib/responses';
 
 interface RateLimitConfig {
   limit: number;
@@ -73,13 +74,12 @@ export async function rateLimiter(c: Context<{ Bindings: Env }>, next: Next) {
     const retryAfter = Math.ceil((resetAt - now) / 1000);
     c.header('Retry-After', retryAfter.toString());
 
-    return c.json(
-      {
-        error: 'Too Many Requests',
-        message: `Rate limit exceeded. Try again in ${retryAfter} seconds.`,
-        retryAfter,
-      },
-      429
+    return jsonError(
+      c,
+      'RATE_LIMIT_EXCEEDED',
+      `Rate limit exceeded. Try again in ${retryAfter} seconds.`,
+      429,
+      { retryAfter, path: c.req.path }
     );
   }
 

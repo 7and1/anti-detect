@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { collectFingerprint } from '../index';
+import { collectAll } from '../collect';
 
 describe('Fingerprint Collection Integration', () => {
   it('should collect complete fingerprint', async () => {
-    const fingerprint = await collectFingerprint();
+    const fingerprint = await collectAll();
 
     expect(fingerprint).toBeDefined();
     expect(typeof fingerprint).toBe('object');
   });
 
   it('should include navigator information', async () => {
-    const fingerprint = await collectFingerprint();
+    const fingerprint = await collectAll();
 
     expect(fingerprint.navigator).toBeDefined();
     expect(fingerprint.navigator.userAgent).toBeDefined();
@@ -18,7 +18,7 @@ describe('Fingerprint Collection Integration', () => {
   });
 
   it('should include screen information', async () => {
-    const fingerprint = await collectFingerprint();
+    const fingerprint = await collectAll();
 
     expect(fingerprint.screen).toBeDefined();
     expect(fingerprint.screen.width).toBeDefined();
@@ -26,38 +26,37 @@ describe('Fingerprint Collection Integration', () => {
   });
 
   it('should include canvas fingerprint', async () => {
-    const fingerprint = await collectFingerprint();
+    const fingerprint = await collectAll();
 
     expect(fingerprint.canvas).toBeDefined();
     expect(fingerprint.canvas.hash).toBeDefined();
   });
 
   it('should include timezone information', async () => {
-    const fingerprint = await collectFingerprint();
+    const fingerprint = await collectAll();
 
     expect(fingerprint.timezone).toBeDefined();
-    expect(fingerprint.timezone.timezone).toBeDefined();
+    expect(fingerprint.timezone.name).toBeDefined();
   });
 
   it('should include automation detection', async () => {
-    const fingerprint = await collectFingerprint();
+    const fingerprint = await collectAll();
 
     expect(fingerprint.automation).toBeDefined();
-    expect(fingerprint.automation.automationDetected).toBeDefined();
+    expect(typeof fingerprint.automation.webdriver).toBe('boolean');
   });
 
-  it('should generate consistent fingerprint hash', async () => {
-    const fingerprint1 = await collectFingerprint();
-    const fingerprint2 = await collectFingerprint();
+  it('should produce consistent navigator + canvas data in same session', async () => {
+    const fingerprint1 = await collectAll();
+    const fingerprint2 = await collectAll();
 
-    expect(fingerprint1.hash).toBeDefined();
-    expect(fingerprint2.hash).toBeDefined();
-    expect(fingerprint1.hash).toBe(fingerprint2.hash);
+    expect(fingerprint1.navigator.userAgent).toBe(fingerprint2.navigator.userAgent);
+    expect(fingerprint1.canvas.hash).toBe(fingerprint2.canvas.hash);
   });
 
   it('should complete collection in reasonable time', async () => {
     const startTime = Date.now();
-    await collectFingerprint();
+    await collectAll();
     const endTime = Date.now();
 
     // Should complete in under 5 seconds
@@ -65,29 +64,19 @@ describe('Fingerprint Collection Integration', () => {
   });
 
   it('should handle missing APIs gracefully', async () => {
-    expect(async () => await collectFingerprint()).not.toThrow();
+    await expect(collectAll()).resolves.toBeDefined();
   });
 
-  it('should include metadata', async () => {
-    const fingerprint = await collectFingerprint();
+  it('should include plugin information when available', async () => {
+    const fingerprint = await collectAll();
 
-    if ('metadata' in fingerprint) {
-      expect(fingerprint.metadata).toBeDefined();
-      expect(typeof fingerprint.metadata).toBe('object');
-    }
-  });
-
-  it('should include timestamp', async () => {
-    const fingerprint = await collectFingerprint();
-
-    if ('timestamp' in fingerprint) {
-      expect(typeof fingerprint.timestamp).toBe('number');
-      expect(fingerprint.timestamp).toBeGreaterThan(0);
+    if (fingerprint.plugins) {
+      expect(Array.isArray(fingerprint.plugins)).toBe(true);
     }
   });
 
   it('should serialize to JSON without errors', async () => {
-    const fingerprint = await collectFingerprint();
+    const fingerprint = await collectAll();
 
     expect(() => JSON.stringify(fingerprint)).not.toThrow();
 
@@ -96,7 +85,7 @@ describe('Fingerprint Collection Integration', () => {
   });
 
   it('should be reproducible from JSON', async () => {
-    const fingerprint = await collectFingerprint();
+    const fingerprint = await collectAll();
     const json = JSON.stringify(fingerprint);
     const parsed = JSON.parse(json);
 

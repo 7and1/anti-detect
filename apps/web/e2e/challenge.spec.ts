@@ -11,10 +11,10 @@ test.describe('Challenge Arena', () => {
   });
 
   test('should show all challenge levels', async ({ page }) => {
-    await expect(page.locator('text=Basic JS')).toBeVisible();
-    await expect(page.locator('text=Headless Hunter')).toBeVisible();
-    await expect(page.locator('text=TLS Inspector')).toBeVisible();
-    await expect(page.locator('text=Human Verification')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Basic JS/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Headless Hunter/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /TLS Inspector/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Human Verification/i })).toBeVisible();
   });
 
   test('should have start button', async ({ page }) => {

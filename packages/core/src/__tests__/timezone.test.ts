@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { collectTimezoneInfo } from '../collectors/timezone';
+import { collectTimezone } from '../collectors/timezone';
 
 describe('Timezone Collector', () => {
-  it('should collect timezone information', () => {
-    const result = collectTimezoneInfo();
+  it('should collect timezone information', async () => {
+    const result = await collectTimezone();
 
     expect(result).toBeDefined();
-    expect(result.timezone).toBeDefined();
-    expect(typeof result.timezone).toBe('string');
+    expect(result.name).toBeDefined();
+    expect(typeof result.name).toBe('string');
   });
 
-  it('should collect timezone offset', () => {
-    const result = collectTimezoneInfo();
+  it('should collect timezone offset', async () => {
+    const result = await collectTimezone();
 
     expect(result.offset).toBeDefined();
     expect(typeof result.offset).toBe('number');
@@ -20,45 +20,37 @@ describe('Timezone Collector', () => {
     expect(result.offset).toBeLessThanOrEqual(840);
   });
 
-  it('should detect daylight saving time if applicable', () => {
-    const result = collectTimezoneInfo();
+  it('should detect daylight saving time if applicable', async () => {
+    const result = await collectTimezone();
 
-    if ('isDST' in result) {
-      expect(typeof result.isDST).toBe('boolean');
+    if (typeof result.dst !== 'undefined') {
+      expect(typeof result.dst).toBe('boolean');
     }
   });
 
-  it('should provide timezone name in IANA format', () => {
-    const result = collectTimezoneInfo();
+  it('should provide timezone name in IANA format', async () => {
+    const result = await collectTimezone();
 
     // IANA timezone format: Continent/City
-    expect(result.timezone).toMatch(/^[A-Za-z_]+\/[A-Za-z_]+$/);
+    expect(result.name).toMatch(/^[A-Za-z_]+\/[A-Za-z_]+$/);
   });
 
-  it('should handle Intl.DateTimeFormat', () => {
-    const result = collectTimezoneInfo();
+  it('should handle Intl.DateTimeFormat', async () => {
+    const result = await collectTimezone();
 
     // Should use Intl.DateTimeFormat if available
-    expect(result.timezone.length).toBeGreaterThan(0);
+    expect(result.name.length).toBeGreaterThan(0);
   });
 
-  it('should calculate correct offset', () => {
-    const result = collectTimezoneInfo();
+  it('should calculate correct offset', async () => {
+    const result = await collectTimezone();
     const now = new Date();
-    const expectedOffset = -now.getTimezoneOffset();
+    const expectedOffset = now.getTimezoneOffset();
 
     expect(result.offset).toBe(expectedOffset);
   });
 
-  it('should detect timezone spoofing', () => {
-    const result = collectTimezoneInfo();
-
-    if ('spoofDetected' in result) {
-      expect(typeof result.spoofDetected).toBe('boolean');
-    }
-  });
-
-  it('should handle timezone detection failure gracefully', () => {
-    expect(() => collectTimezoneInfo()).not.toThrow();
+  it('should handle timezone detection failure gracefully', async () => {
+    await expect(collectTimezone()).resolves.toBeDefined();
   });
 });

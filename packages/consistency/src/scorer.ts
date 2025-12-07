@@ -11,7 +11,7 @@ import type {
 } from '@anti-detect/types';
 import { ConsistencyEngine, evaluateConsistency } from './engine';
 import type { ValidationInput, ScoringWeights } from './types';
-import { DEFAULT_WEIGHTS } from './types';
+import { DEFAULT_WEIGHTS, DEFAULT_WEIGHT_PRESETS } from './types';
 
 /**
  * Calculate Trust Score from fingerprint data
@@ -104,6 +104,11 @@ export function calculateTrustScore(
     warnings,
     recommendations,
   };
+}
+
+export function getPresetWeights(id: string): ScoringWeights | null {
+  const preset = DEFAULT_WEIGHT_PRESETS.find((p) => p.id === id);
+  return preset ? preset.weights : null;
 }
 
 /**

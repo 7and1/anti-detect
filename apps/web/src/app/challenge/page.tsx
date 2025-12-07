@@ -27,7 +27,7 @@ interface ChallengeResult {
 
 export default function ChallengePage() {
   const [status, setStatus] = useState<ChallengeStatus>('idle');
-  const [_currentLevel, setCurrentLevel] = useState(0);
+  const [currentLevel, setCurrentLevel] = useState(0);
   const [levels, setLevels] = useState<Level[]>([
     {
       id: 1,
@@ -68,19 +68,25 @@ export default function ChallengePage() {
   ]);
   const [result, setResult] = useState<ChallengeResult | null>(null);
 
-  const startChallenge = useCallback(async () => {
-    setStatus('running');
-    setCurrentLevel(1);
-    setResult(null);
+  const calculateResults = useCallback(() => {
+    const totalScore = levels.reduce((sum, l) => sum + l.score, 0);
+    const maxScore = levels.reduce((sum, l) => sum + l.points, 0);
+    const percentageScore = Math.round((totalScore / maxScore) * 100);
+    const levelsPassed = levels.filter((l) => l.status === 'passed').length;
 
-    // Reset levels
-    setLevels((prev) =>
-      prev.map((l) => ({ ...l, status: 'pending', score: 0, checks: [] }))
-    );
+    let verdict: 'HUMAN' | 'SUSPICIOUS' | 'LIKELY BOT';
+    if (percentageScore >= 90) verdict = 'HUMAN';
+    else if (percentageScore >= 50) verdict = 'SUSPICIOUS';
+    else verdict = 'LIKELY BOT';
 
-    // Start Level 1
-    await runLevel(1);
-  }, []);
+    setResult({
+      totalScore,
+      maxScore,
+      percentageScore,
+      levelsPassed,
+      verdict,
+    });
+  }, [levels]);
 
   const runLevel = useCallback(async (levelId: number) => {
     setLevels((prev) =>
@@ -159,7 +165,21 @@ export default function ChallengePage() {
         setStatus('complete');
       }
     }
-  }, [levels]);
+  }, [levels, calculateResults]);
+
+  const startChallenge = useCallback(async () => {
+    setStatus('running');
+    setCurrentLevel(1);
+    setResult(null);
+
+    // Reset levels
+    setLevels((prev) =>
+      prev.map((l) => ({ ...l, status: 'pending', score: 0, checks: [] }))
+    );
+
+    // Start Level 1
+    await runLevel(1);
+  }, [runLevel]);
 
   const runLevelChecks = (levelId: number): { id: string; name: string; passed: boolean }[] => {
     switch (levelId) {
@@ -206,26 +226,6 @@ export default function ChallengePage() {
         return [];
     }
   };
-
-  const calculateResults = useCallback(() => {
-    const totalScore = levels.reduce((sum, l) => sum + l.score, 0);
-    const maxScore = levels.reduce((sum, l) => sum + l.points, 0);
-    const percentageScore = Math.round((totalScore / maxScore) * 100);
-    const levelsPassed = levels.filter((l) => l.status === 'passed').length;
-
-    let verdict: 'HUMAN' | 'SUSPICIOUS' | 'LIKELY BOT';
-    if (percentageScore >= 90) verdict = 'HUMAN';
-    else if (percentageScore >= 50) verdict = 'SUSPICIOUS';
-    else verdict = 'LIKELY BOT';
-
-    setResult({
-      totalScore,
-      maxScore,
-      percentageScore,
-      levelsPassed,
-      verdict,
-    });
-  }, [levels]);
 
   useEffect(() => {
     if (status === 'complete') {
@@ -304,6 +304,14 @@ export default function ChallengePage() {
             </p>
           </div>
 
+          {status === 'running' && (
+            <div className="mb-8 text-center" data-testid="challenge-running">
+              <p className="text-sm text-text-secondary">
+                Running level {Math.min(currentLevel, levels.length)} of {levels.length}...
+              </p>
+            </div>
+          )}
+
           {/* Challenge Levels */}
           <div className="space-y-4 mb-8">
             {levels.map((level) => (
@@ -347,6 +355,7 @@ export default function ChallengePage() {
                               ? 'text-error'
                               : 'text-accent'
                         }`}
+                        data-testid="level-score"
                       >
                         {level.score}
                       </span>
@@ -363,6 +372,7 @@ export default function ChallengePage() {
                         <div
                           key={check.id}
                           className="flex items-center gap-2 px-3 py-2 rounded bg-bg-primary"
+                          data-testid="check-item"
                         >
                           <div
                             className={`w-2 h-2 rounded-full ${
@@ -381,19 +391,23 @@ export default function ChallengePage() {
 
           {/* Results */}
           {status === 'complete' && result && (
-            <div className="p-8 rounded-lg bg-bg-secondary border border-border text-center mb-8">
+            <div
+              className="p-8 rounded-lg bg-bg-secondary border border-border text-center mb-8"
+              data-testid="challenge-complete"
+            >
               <h2 className="text-2xl font-bold text-text-primary mb-6">Challenge Complete</h2>
 
               {/* Verdict */}
               <div
                 className={`text-5xl font-bold mb-4 ${getVerdictColor(result.verdict)}`}
+                data-testid="verdict"
               >
                 {result.verdict}
               </div>
 
               {/* Score */}
               <div className="flex items-center justify-center gap-2 mb-6">
-                <span className="text-4xl font-bold font-mono text-text-primary">
+                <span className="text-4xl font-bold font-mono text-text-primary" data-testid="final-score">
                   {result.totalScore}
                 </span>
                 <span className="text-2xl text-text-muted">/ {result.maxScore}</span>

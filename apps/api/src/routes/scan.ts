@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../index';
 import { optionalTurnstileMiddleware } from '../middleware/turnstile';
+import { jsonError } from '../lib/responses';
 
 export const scanRoutes = new Hono<{ Bindings: Env }>();
 
@@ -133,7 +134,7 @@ scanRoutes.post(
     // Retrieve session data
     const sessionData = await c.env.RATE_LIMITS.get(`session:${sessionId}`, 'json');
     if (!sessionData) {
-      return c.json({ error: 'Session expired or invalid' }, 400);
+      return jsonError(c, 'BAD_REQUEST', 'Session expired or invalid', 400);
     }
 
     const { ipInfo, ja3Hash, ja4Hash } = sessionData as any;
@@ -164,7 +165,7 @@ scanRoutes.get('/status/:sessionId', async (c) => {
   const sessionData = await c.env.RATE_LIMITS.get(`session:${sessionId}`, 'json');
 
   if (!sessionData) {
-    return c.json({ status: 'expired', message: 'Session not found or expired' }, 404);
+    return jsonError(c, 'NOT_FOUND', 'Session not found or expired', 404);
   }
 
   return c.json({

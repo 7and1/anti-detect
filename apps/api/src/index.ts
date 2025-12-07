@@ -10,7 +10,14 @@ import { generateRoutes } from './routes/generate';
 import { challengeRoutes } from './routes/challenge';
 import { reportRoutes } from './routes/report';
 import { ipRoutes } from './routes/ip';
+import { scoreRoutes } from './routes/score';
+import { tasksRoutes } from './routes/tasks';
+import { webhooksRoutes } from './routes/webhooks';
 import { rateLimiter } from './middleware/rate-limit';
+import { dispatchDueAutomationTasks, processAutomationQueue } from './services/tasks';
+import { requestContext } from './middleware/request-context';
+import { validateEnv } from './middleware/env-validate';
+import { apiKeyAuth } from './middleware/api-key';
 
 // Define bindings type
 export interface Env {
@@ -18,17 +25,23 @@ export interface Env {
   IP_CACHE: KVNamespace;
   JA3_DB: KVNamespace;
   RATE_LIMITS: KVNamespace;
+  TASK_QUEUE: KVNamespace;
   R2: R2Bucket;
   ENVIRONMENT: string;
   CORS_ORIGIN: string;
   TURNSTILE_SECRET: string;
   TURNSTILE_SITE_KEY: string;
+  WEBHOOK_SIGNING_SECRET: string;
+  API_KEYS?: string;
+  ABUSEIPDB_KEY?: string;
 }
 
 // Create Hono app with bindings
 const app = new Hono<{ Bindings: Env }>();
 
 // Global middleware
+app.use('*', requestContext());
+app.use('*', validateEnv());
 app.use('*', logger());
 app.use('*', timing());
 app.use('*', prettyJSON());
@@ -50,6 +63,9 @@ app.use('*', async (c, next) => {
   });
   return corsMiddleware(c, next);
 });
+
+// API key enforcement
+app.use('*', apiKeyAuth());
 
 // Rate limiting
 app.use('*', rateLimiter);
@@ -92,14 +108,23 @@ app.route('/generate', generateRoutes);
 app.route('/challenge', challengeRoutes);
 app.route('/report', reportRoutes);
 app.route('/ip', ipRoutes);
+app.route('/score', scoreRoutes);
+app.route('/tasks', tasksRoutes);
+app.route('/webhooks', webhooksRoutes);
 
 // 404 handler
 app.notFound((c) => {
+  const requestId = c.res.headers.get('X-Request-ID') || crypto.randomUUID();
+  c.header('X-Request-ID', requestId);
+
   return c.json(
     {
-      error: 'Not Found',
-      message: `Route ${c.req.method} ${c.req.path} not found`,
-      status: 404,
+      error: {
+        code: 'NOT_FOUND',
+        message: `Route ${c.req.method} ${c.req.path} not found`,
+        statusCode: 404,
+        requestId,
+      },
     },
     404
   );
@@ -110,15 +135,20 @@ app.onError((err, c) => {
   console.error(`Error: ${err.message}`, err.stack);
 
   const status = 'status' in err ? (err.status as number) : 500;
+  const requestId = c.res.headers.get('X-Request-ID') || crypto.randomUUID();
+  c.header('X-Request-ID', requestId);
 
   return c.json(
     {
-      error: err.name || 'Internal Server Error',
-      message:
-        c.env.ENVIRONMENT === 'development'
-          ? err.message
-          : 'An unexpected error occurred',
-      status,
+      error: {
+        code: status === 404 ? 'NOT_FOUND' : 'INTERNAL_ERROR',
+        message:
+          c.env.ENVIRONMENT === 'development'
+            ? err.message
+            : 'An unexpected error occurred',
+        statusCode: status,
+        requestId,
+      },
     },
     status
   );
@@ -141,8 +171,15 @@ export const scheduled: ExportedHandlerScheduledHandler<Env> = async (
   } else if (hour === 1) {
     // Aggregate daily analytics at 1 AM
     ctx.waitUntil(aggregateDailyAnalytics(env.DB));
+  } else {
+    ctx.waitUntil(runAutomationCron(env));
   }
 };
+
+async function runAutomationCron(env: Env) {
+  const dispatched = await dispatchDueAutomationTasks(env.DB, env.TASK_QUEUE, Date.now(), 10);
+  await processAutomationQueue(env, dispatched > 0 ? 5 : 2);
+}
 
 async function cleanupExpiredReports(db: D1Database) {
   const result = await db

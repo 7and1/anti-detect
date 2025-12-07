@@ -3,11 +3,13 @@ import Link from 'next/link';
 export function Footer() {
   const tools = [
     { name: 'Fingerprint Scanner', href: '/' },
-    { name: 'Fingerprint Generator', href: '/generator' },
-    { name: 'Challenge Arena', href: '/challenge' },
-    { name: 'WebRTC Leak Test', href: '/tools/webrtc' },
-    { name: 'Canvas Fingerprint', href: '/tools/canvas' },
-    { name: 'TLS Fingerprint', href: '/tools/tls' },
+    { name: 'Fingerprint Generator', href: '/tools/generator' },
+    { name: 'Challenge Arena', href: '/tools/challenge' },
+    { name: 'Automation Queue', href: '/automation' },
+    { name: 'WebRTC Leak Test', href: '/tools/webrtc-leak' },
+    { name: 'Canvas Fingerprint', href: '/tools/canvas-fingerprint' },
+    { name: 'TLS Fingerprint', href: '/tools/tls-fingerprint' },
+    { name: 'Timezone Checker', href: '/tools/timezone-check' },
   ];
 
   const learn = [
@@ -20,7 +22,7 @@ export function Footer() {
   const legal = [
     { name: 'Privacy Policy', href: '/privacy' },
     { name: 'Terms of Service', href: '/terms' },
-    { name: 'Cookie Policy', href: '/cookies' },
+    { name: 'About', href: '/about' },
   ];
 
   return (

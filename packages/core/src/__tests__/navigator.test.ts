@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { collectNavigatorInfo } from '../collectors/navigator';
+import { collectNavigator } from '../collectors/navigator';
 
 describe('Navigator Collector', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should collect basic navigator information', () => {
-    const result = collectNavigatorInfo();
+  it('should collect basic navigator information', async () => {
+    const result = await collectNavigator();
 
     expect(result).toBeDefined();
     expect(result.userAgent).toBeDefined();
@@ -16,47 +16,46 @@ describe('Navigator Collector', () => {
     expect(typeof result.platform).toBe('string');
   });
 
-  it('should collect language information', () => {
-    const result = collectNavigatorInfo();
+  it('should collect language information', async () => {
+    const result = await collectNavigator();
 
     expect(result.language).toBeDefined();
     expect(result.languages).toBeDefined();
     expect(Array.isArray(result.languages)).toBe(true);
   });
 
-  it('should collect hardware concurrency', () => {
-    const result = collectNavigatorInfo();
+  it('should collect hardware concurrency', async () => {
+    const result = await collectNavigator();
 
     expect(result.hardwareConcurrency).toBeDefined();
     expect(typeof result.hardwareConcurrency).toBe('number');
     expect(result.hardwareConcurrency).toBeGreaterThan(0);
   });
 
-  it('should detect if navigator.webdriver is present', () => {
-    const result = collectNavigatorInfo();
+  it('should detect if navigator.webdriver is present', async () => {
+    const result = await collectNavigator();
 
     expect('webdriver' in result).toBe(true);
     // Normal browsers should not have webdriver set to true
     expect(result.webdriver).not.toBe(true);
   });
 
-  it('should collect device memory if available', () => {
-    const result = collectNavigatorInfo();
+  it('should collect device memory if available', async () => {
+    const result = await collectNavigator();
 
-    // DeviceMemory might not be available in all browsers
-    if ('deviceMemory' in result) {
+    if (typeof result.deviceMemory !== 'undefined') {
       expect(typeof result.deviceMemory).toBe('number');
     }
   });
 
-  it('should collect maxTouchPoints', () => {
-    const result = collectNavigatorInfo();
+  it('should collect maxTouchPoints', async () => {
+    const result = await collectNavigator();
 
     expect('maxTouchPoints' in result).toBe(true);
     expect(typeof result.maxTouchPoints).toBe('number');
   });
 
-  it('should handle missing properties gracefully', () => {
+  it('should handle missing properties gracefully', async () => {
     // Mock a limited navigator object
     const originalNavigator = global.navigator;
 
@@ -69,7 +68,7 @@ describe('Navigator Collector', () => {
       writable: true,
     });
 
-    expect(() => collectNavigatorInfo()).not.toThrow();
+    await expect(collectNavigator()).resolves.toBeDefined();
 
     // Restore original navigator
     Object.defineProperty(global, 'navigator', {

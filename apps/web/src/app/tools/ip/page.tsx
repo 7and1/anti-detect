@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import { Header } from '@/components/ui/Header';
 import { Footer } from '@/components/ui/Footer';
 
@@ -79,6 +80,68 @@ export default function IPPage() {
   const [result, setResult] = useState<IPResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const testWebRTCLeaks = useCallback(async (): Promise<{
+    localIPs: string[];
+    publicIP: string | null;
+    hasLeak: boolean;
+  }> => {
+    const localIPs: string[] = [];
+    let publicIP: string | null = null;
+
+    try {
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ],
+      });
+
+      pc.createDataChannel('');
+
+      const candidates = await new Promise<RTCIceCandidate[]>((resolve) => {
+        const candidates: RTCIceCandidate[] = [];
+        const timeout = setTimeout(() => resolve(candidates), 3000);
+
+        pc.onicecandidate = (event) => {
+          if (event.candidate) {
+            candidates.push(event.candidate);
+          } else {
+            clearTimeout(timeout);
+            resolve(candidates);
+          }
+        };
+
+        pc.createOffer().then((offer) => pc.setLocalDescription(offer));
+      });
+
+      candidates.forEach((candidate) => {
+        const parts = candidate.candidate.split(' ');
+        const ip = parts[4];
+        if (ip && !localIPs.includes(ip)) {
+          localIPs.push(ip);
+        }
+      });
+
+      // Use Cloudflare trace to get public IP
+      const traceResponse = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
+      const traceText = await traceResponse.text();
+      const ipMatch = traceText.match(/ip=([\\d.:]+)/);
+      publicIP = ipMatch?.[1] ?? null;
+
+      return {
+        localIPs,
+        publicIP,
+        hasLeak: Boolean(publicIP && localIPs.some((ip) => !ip.startsWith('10.') && !ip.startsWith('192.168'))),
+      };
+    } catch {
+      return {
+        localIPs: [],
+        publicIP: null,
+        hasLeak: false,
+      };
+    }
+  }, []);
 
   const runTest = useCallback(async () => {
     setIsLoading(true);
@@ -163,7 +226,7 @@ export default function IPPage() {
             countryCode: 'XX',
             region: 'Unknown',
             city: 'Unknown',
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown',
             latitude: 0,
             longitude: 0,
           },
@@ -209,75 +272,7 @@ export default function IPPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
-
-  const testWebRTCLeaks = async (): Promise<{
-    localIPs: string[];
-    publicIP: string | null;
-    hasLeak: boolean;
-  }> => {
-    const localIPs: string[] = [];
-    let publicIP: string | null = null;
-
-    try {
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-        ],
-      });
-
-      pc.createDataChannel('');
-
-      const candidates = await new Promise<RTCIceCandidate[]>((resolve) => {
-        const candidates: RTCIceCandidate[] = [];
-        const timeout = setTimeout(() => resolve(candidates), 3000);
-
-        pc.onicecandidate = (event) => {
-          if (event.candidate) {
-            candidates.push(event.candidate);
-          } else {
-            clearTimeout(timeout);
-            resolve(candidates);
-          }
-        };
-
-        pc.createOffer()
-          .then((offer) => pc.setLocalDescription(offer))
-          .catch(() => resolve(candidates));
-      });
-
-      // Extract IPs from candidates
-      const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/gi;
-
-      for (const candidate of candidates) {
-        const matches = candidate.candidate.match(ipRegex);
-        if (matches) {
-          for (const ip of matches) {
-            if (isPrivateIP(ip)) {
-              if (!localIPs.includes(ip)) {
-                localIPs.push(ip);
-              }
-            } else {
-              if (!publicIP) {
-                publicIP = ip;
-              }
-            }
-          }
-        }
-      }
-
-      pc.close();
-    } catch (err) {
-      console.warn('WebRTC test failed:', err);
-    }
-
-    return {
-      localIPs,
-      publicIP,
-      hasLeak: localIPs.length > 0 || publicIP !== null,
-    };
-  };
+  }, [testWebRTCLeaks]);
 
   const isPrivateIP = (ip: string): boolean => {
     const parts = ip.split('.').map(Number);
@@ -858,7 +853,7 @@ export default function IPPage() {
                     IP tracking is just one piece of the browser fingerprinting puzzle. To understand the full picture of how websites track and identify you, check out our comprehensive guides on related topics.
                   </p>
                   <div className="flex flex-col gap-3">
-                    <a
+                    <Link
                       href="/learn/webrtc-leaks"
                       className="inline-flex items-center gap-2 text-accent hover:underline font-semibold"
                     >
@@ -871,21 +866,21 @@ export default function IPPage() {
                           d="M9 5l7 7-7 7"
                         />
                       </svg>
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/learn/browser-fingerprinting"
-                      className="inline-flex items-center gap-2 text-accent hover:underline font-semibold"
-                    >
-                      Understand how browser fingerprinting works beyond just IP addresses
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
+                    className="inline-flex items-center gap-2 text-accent hover:underline font-semibold"
+                  >
+                    Understand how browser fingerprinting works beyond just IP addresses
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
                           d="M9 5l7 7-7 7"
                         />
                       </svg>
-                    </a>
+                    </Link>
                   </div>
                   <p className="text-sm text-text-muted mt-4">
                     Data sources: <a href="https://support.maxmind.com/hc/en-us/articles/4407630607131-Geolocation-Accuracy" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">MaxMind Geolocation Accuracy</a>, <a href="https://thebestvpn.com/vpn-leak-test/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">TheBestVPN Leak Test Study</a>, <a href="https://umatechnology.org/16-of-vpns-leak-your-ip-address-its-time-to-take-action/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">UMA Technology VPN Research</a>, <a href="https://litport.net/blog/ip-geolocation-a-comprehensive-guide-to-location-intelligence-69228" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">IP Geolocation Market 2025</a>, Tatang, Dennis & Schneider (2019), Internet Measurement Conference studies

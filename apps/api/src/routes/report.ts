@@ -2,6 +2,12 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import type { Env } from '../index';
+import { sha256 } from '../lib/hash';
+import {
+  recordFingerprintSession,
+  getSessionHistory,
+  getSessionDiff,
+} from '../services/history';
 
 export const reportRoutes = new Hono<{ Bindings: Env }>();
 
@@ -14,8 +20,20 @@ const createReportSchema = z.object({
     criticalIssues: z.array(z.any()),
     warnings: z.array(z.any()),
     recommendations: z.array(z.string()),
+    clientId: z.string().min(8).max(128).optional(),
+    fingerprintHash: z.string().min(12).max(256).optional(),
+    metadata: z.record(z.any()).optional(),
   }),
   expiresIn: z.number().min(1).max(30).optional().default(30), // days
+});
+
+const historyQuerySchema = z.object({
+  limit: z.coerce.number().min(3).max(50).optional().default(10),
+});
+
+const diffQuerySchema = z.object({
+  baseline: z.string().min(6),
+  target: z.string().min(6),
 });
 
 // POST /report/create - Create shareable report
@@ -31,7 +49,7 @@ reportRoutes.post(
     const reportId = crypto.randomUUID();
 
     // Hash IP for privacy (don't store actual IP)
-    const ipHash = await hashString(ip);
+    const ipHash = await sha256(ip);
 
     // Calculate expiry
     const createdAt = Date.now();
@@ -54,12 +72,30 @@ reportRoutes.post(
       )
       .run();
 
+    const clientId =
+      scanData.clientId || (await sha256(`${ipHash}:${scanData.grade}:${scanData.trustScore}`));
+    const fingerprintHash =
+      scanData.fingerprintHash || (await sha256(JSON.stringify(scanData.layers)));
+
+    await recordFingerprintSession(db, {
+      clientId,
+      reportId,
+      trustScore: scanData.trustScore,
+      issuesCount: scanData.criticalIssues.length,
+      warningsCount: scanData.warnings.length,
+      layers: scanData.layers,
+      recommendations: scanData.recommendations,
+      metadata: { ...(scanData.metadata || {}), grade: scanData.grade },
+      fingerprintHash,
+    });
+
     const reportUrl = `https://anti-detect.com/report/${reportId}`;
 
     return c.json({
       reportId,
       url: reportUrl,
       expiresAt: new Date(expiresAt).toISOString(),
+      historyKey: clientId,
       shareLinks: {
         twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`My browser fingerprint score: ${scanData.trustScore}/100 (${scanData.grade}). Check yours at`)}&url=${encodeURIComponent(reportUrl)}`,
         reddit: `https://reddit.com/submit?url=${encodeURIComponent(reportUrl)}&title=${encodeURIComponent(`My Browser Fingerprint Score: ${scanData.trustScore}/100`)}`,
@@ -94,6 +130,12 @@ reportRoutes.get('/:uuid', async (c) => {
     .run();
 
   const scanData = JSON.parse(report.scan_data as string);
+  const session = await db
+    .prepare('SELECT client_id FROM fingerprint_sessions WHERE report_id = ?')
+    .bind(uuid)
+    .first<{ client_id: string }>();
+
+  const historyKey = session?.client_id ?? null;
 
   return c.json({
     reportId: report.id,
@@ -102,6 +144,7 @@ reportRoutes.get('/:uuid', async (c) => {
     createdAt: new Date(report.created_at as number).toISOString(),
     expiresAt: new Date(report.expires_at as number).toISOString(),
     viewCount: (report.view_count as number) + 1,
+    historyKey,
     scanData: {
       layers: scanData.layers,
       criticalIssues: scanData.criticalIssues,
@@ -156,7 +199,7 @@ reportRoutes.delete('/:uuid', async (c) => {
   const uuid = c.req.param('uuid');
   const db = c.env.DB;
   const ip = c.req.header('CF-Connecting-IP') || 'unknown';
-  const ipHash = await hashString(ip);
+  const ipHash = await sha256(ip);
 
   // Verify ownership
   const report = await db
@@ -181,15 +224,54 @@ reportRoutes.delete('/:uuid', async (c) => {
   return c.json({ success: true, message: 'Report deleted' });
 });
 
-// Helper functions
-async function hashString(input: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+// GET /report/history/:clientId
+reportRoutes.get(
+  '/history/:clientId',
+  zValidator('query', historyQuerySchema),
+  async (c) => {
+    const clientId = c.req.param('clientId');
+    const { limit } = c.req.valid('query');
+    const history = await getSessionHistory(c.env.DB, clientId, limit);
 
+    const latest = history[0] ?? null;
+    const previous = history[1] ?? null;
+
+    return c.json({
+      clientId,
+      count: history.length,
+      latest,
+      previous,
+      summary: latest
+        ? {
+            latestScore: latest.trustScore,
+            deltaScore: latest.deltas.score,
+            issuesDelta: latest.deltas.issues,
+            fingerprintChanged: latest.deltas.fingerprintChanged,
+          }
+        : null,
+      history,
+    });
+  }
+);
+
+// GET /report/history/:clientId/diff
+reportRoutes.get(
+  '/history/:clientId/diff',
+  zValidator('query', diffQuerySchema),
+  async (c) => {
+    const clientId = c.req.param('clientId');
+    const { baseline, target } = c.req.valid('query');
+    const diff = await getSessionDiff(c.env.DB, clientId, baseline, target);
+
+    if (!diff) {
+      return c.json({ error: 'Comparison not available' }, 404);
+    }
+
+    return c.json(diff);
+  }
+);
+
+// Helper functions
 function generateReportHtml(uuid: string, trustScore: number, scanData: any): string {
   const grade = scanData.grade;
   const gradeColor = grade === 'A' ? '#10b981' : grade === 'B' ? '#22c55e' : grade === 'C' ? '#f59e0b' : grade === 'D' ? '#f97316' : '#ef4444';

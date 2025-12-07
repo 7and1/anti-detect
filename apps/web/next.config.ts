@@ -129,6 +129,10 @@ const nextConfig: NextConfig = {
         destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/scan/:path*`,
       },
       {
+        source: '/api/generate/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/generate/:path*`,
+      },
+      {
         source: '/api/report/:path*',
         destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/report/:path*`,
       },
@@ -137,8 +141,24 @@ const nextConfig: NextConfig = {
         destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/ip/:path*`,
       },
       {
+        source: '/api/score/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/score/:path*`,
+      },
+      {
         source: '/api/tls/:path*',
         destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/tls/:path*`,
+      },
+      {
+        source: '/api/challenge/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/challenge/:path*`,
+      },
+      {
+        source: '/api/tasks/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/tasks/:path*`,
+      },
+      {
+        source: '/api/webhooks/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com'}/webhooks/:path*`,
       },
     ];
   },

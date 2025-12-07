@@ -1,4 +1,26 @@
+import type { ScoringWeights } from '@anti-detect/consistency';
+import type {
+  AutomationTaskDTO,
+  AutomationTaskRunDTO,
+  WebhookSubscriptionDTO,
+  WebhookDeliveryDTO,
+  AutomationTarget,
+  AutomationSchedule,
+  AutomationCadence,
+} from '@anti-detect/types';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.anti-detect.com';
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+
+const withApiHeaders = (headers: HeadersInit = {}): HeadersInit => {
+  const merged: Record<string, string> = {
+    ...(typeof headers === 'object' ? (headers as Record<string, string>) : {}),
+  };
+  if (API_KEY) {
+    merged['x-api-key'] = API_KEY;
+  }
+  return merged;
+};
 
 export interface ScanSession {
   sessionId: string;
@@ -26,6 +48,8 @@ export interface ScanResult {
   criticalIssues: Issue[];
   warnings: Issue[];
   recommendations: string[];
+  profileId?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface LayerResult {
@@ -55,6 +79,18 @@ export interface Issue {
   layer: string;
   check: string;
   message: string;
+}
+
+export interface ScoringProfileDTO {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string;
+  useCase?: string;
+  weights: ScoringWeights;
+  isDefault: boolean;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface GeneratedFingerprint {
@@ -112,9 +148,9 @@ export interface IPCheckResult {
 export async function startScan(): Promise<ScanSession> {
   const response = await fetch(`${API_BASE}/scan/start`, {
     method: 'POST',
-    headers: {
+    headers: withApiHeaders({
       'Content-Type': 'application/json',
-    },
+    }),
   });
 
   if (!response.ok) {
@@ -130,9 +166,9 @@ export async function submitFingerprint(
 ): Promise<ScanResult> {
   const response = await fetch(`${API_BASE}/scan/collect`, {
     method: 'POST',
-    headers: {
+    headers: withApiHeaders({
       'Content-Type': 'application/json',
-    },
+    }),
     body: JSON.stringify({ sessionId, fingerprint }),
   });
 
@@ -156,9 +192,9 @@ export async function generateFingerprint(options?: {
 
   const response = await fetch(`${API_BASE}/generate?${params}`, {
     method: 'GET',
-    headers: {
+    headers: withApiHeaders({
       'Content-Type': 'application/json',
-    },
+    }),
   });
 
   if (!response.ok) {
@@ -183,9 +219,9 @@ export async function exportFingerprint(
 
   const response = await fetch(`${API_BASE}/generate/export/${format}?${params}`, {
     method: 'GET',
-    headers: {
+    headers: withApiHeaders({
       'Content-Type': 'application/json',
-    },
+    }),
   });
 
   if (!response.ok) {
@@ -203,9 +239,9 @@ export async function createReport(scanData: ScanResult): Promise<{
 }> {
   const response = await fetch(`${API_BASE}/report/create`, {
     method: 'POST',
-    headers: {
+    headers: withApiHeaders({
       'Content-Type': 'application/json',
-    },
+    }),
     body: JSON.stringify({
       scanData: {
         trustScore: scanData.trustScore,
@@ -214,6 +250,11 @@ export async function createReport(scanData: ScanResult): Promise<{
         criticalIssues: scanData.criticalIssues,
         warnings: scanData.warnings,
         recommendations: scanData.recommendations,
+        clientId: scanData.sessionId,
+        metadata: {
+          ...(scanData.metadata || {}),
+          profileId: scanData.profileId,
+        },
       },
     }),
   });
@@ -239,7 +280,9 @@ export async function getReport(reportId: string): Promise<{
     recommendations: string[];
   };
 }> {
-  const response = await fetch(`${API_BASE}/report/${reportId}`);
+  const response = await fetch(`${API_BASE}/report/${reportId}`, {
+    headers: withApiHeaders(),
+  });
 
   if (!response.ok) {
     throw new Error('Report not found');
@@ -248,9 +291,60 @@ export async function getReport(reportId: string): Promise<{
   return response.json();
 }
 
+// Scoring profile API
+export async function listScoringProfiles(): Promise<ScoringProfileDTO[]> {
+  const response = await fetch(`${API_BASE}/score/profiles`, {
+    headers: withApiHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to load scoring profiles');
+  }
+  const data = await response.json();
+  return data.profiles ?? [];
+}
+
+export async function createScoringProfile(payload: Partial<ScoringProfileDTO>): Promise<ScoringProfileDTO> {
+  const response = await fetch(`${API_BASE}/score/profiles`, {
+    method: 'POST',
+    headers: withApiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create profile');
+  }
+  return response.json();
+}
+
+export async function updateScoringProfile(
+  id: string,
+  payload: Partial<ScoringProfileDTO>
+): Promise<ScoringProfileDTO> {
+  const response = await fetch(`${API_BASE}/score/profiles/${id}`, {
+    method: 'PUT',
+    headers: withApiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update profile');
+  }
+  return response.json();
+}
+
+export async function deleteScoringProfile(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/score/profiles/${id}`, {
+    method: 'DELETE',
+    headers: withApiHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to delete profile');
+  }
+}
+
 // IP Check API
 export async function checkIP(): Promise<IPCheckResult> {
-  const response = await fetch(`${API_BASE}/ip/check`);
+  const response = await fetch(`${API_BASE}/ip/check`, {
+    headers: withApiHeaders(),
+  });
 
   if (!response.ok) {
     throw new Error('Failed to check IP');
@@ -266,6 +360,7 @@ export async function startChallenge(): Promise<{
 }> {
   const response = await fetch(`${API_BASE}/challenge/start`, {
     method: 'POST',
+    headers: withApiHeaders(),
   });
 
   if (!response.ok) {
@@ -289,9 +384,9 @@ export async function submitChallengeLevel(
 }> {
   const response = await fetch(`${API_BASE}/challenge/level/${level}`, {
     method: 'POST',
-    headers: {
+    headers: withApiHeaders({
       'Content-Type': 'application/json',
-    },
+    }),
     body: JSON.stringify({ sessionId, checks }),
   });
 
@@ -300,4 +395,147 @@ export async function submitChallengeLevel(
   }
 
   return response.json();
+}
+
+// Automation API
+export async function listAutomationTasks(limit = 25): Promise<AutomationTaskDTO[]> {
+  const response = await fetch(`${API_BASE}/tasks?limit=${limit}`, {
+    cache: 'no-store',
+    headers: withApiHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error((await extractApiError(response)) || 'Failed to load automation tasks');
+  }
+  const data = await response.json();
+  return data.tasks ?? [];
+}
+
+export async function getAutomationTask(taskId: string): Promise<{
+  task: AutomationTaskDTO;
+  runs: AutomationTaskRunDTO[];
+}> {
+  const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+    headers: withApiHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error('Automation task not found');
+  }
+  return response.json();
+}
+
+export async function createAutomationTask(payload: CreateAutomationTaskRequest): Promise<AutomationTaskDTO> {
+  const response = await fetch(`${API_BASE}/tasks`, {
+    method: 'POST',
+    headers: withApiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error((await extractApiError(response)) || 'Failed to create automation task');
+  }
+  return response.json();
+}
+
+export async function triggerAutomationTask(taskId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/tasks/${taskId}/trigger`, {
+    method: 'POST',
+    headers: withApiHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error((await extractApiError(response)) || 'Unable to enqueue task');
+  }
+}
+
+// Webhooks API
+export async function listWebhookSubscriptions(projectId?: string): Promise<WebhookSubscriptionDTO[]> {
+  const params = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+  const response = await fetch(`${API_BASE}/webhooks${params}`, {
+    headers: withApiHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error((await extractApiError(response)) || 'Failed to load webhooks');
+  }
+  const data = await response.json();
+  return data.webhooks ?? [];
+}
+
+export async function createWebhookSubscription(payload: CreateWebhookRequest): Promise<WebhookSubscriptionDTO> {
+  const response = await fetch(`${API_BASE}/webhooks`, {
+    method: 'POST',
+    headers: withApiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error((await extractApiError(response)) || 'Failed to create webhook');
+  }
+  return response.json();
+}
+
+export async function testWebhookSubscription(id: string): Promise<WebhookDeliveryDTO> {
+  const response = await fetch(`${API_BASE}/webhooks/${id}/test`, {
+    method: 'POST',
+    headers: withApiHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error((await extractApiError(response)) || 'Unable to trigger webhook');
+  }
+  const data = await response.json();
+  return data.delivery;
+}
+
+export async function testAdhocWebhook(payload: WebhookTestRequest): Promise<{
+  ok: boolean;
+  status: number;
+  error?: string;
+}> {
+  const response = await fetch(`${API_BASE}/webhooks/test`, {
+    method: 'POST',
+    headers: withApiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error((await extractApiError(response)) || 'Unable to send webhook test');
+  }
+  return response.json();
+}
+
+// Types for callers
+export interface CreateAutomationTaskRequest {
+  name: string;
+  projectId?: string;
+  cadence: AutomationCadence;
+  timezone?: string;
+  schedule?: AutomationSchedule;
+  targets: AutomationTarget[];
+  webhook?: {
+    url: string;
+    secret?: string;
+  };
+  activate?: boolean;
+}
+
+export interface CreateWebhookRequest {
+  name: string;
+  projectId?: string;
+  url: string;
+  events: string[];
+  secret?: string;
+  status?: 'active' | 'paused';
+}
+
+export interface WebhookTestRequest {
+  url: string;
+  secret?: string;
+  projectId?: string;
+}
+
+async function extractApiError(response: Response): Promise<string | null> {
+  try {
+    const data = await response.clone().json();
+    if (typeof data?.error === 'string') {
+      return data.error;
+    }
+  } catch {
+    // Ignore body parsing failures and fall back to status text
+  }
+  return response.statusText || null;
 }

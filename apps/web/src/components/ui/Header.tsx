@@ -8,9 +8,11 @@ export function Header() {
 
   const navigation = [
     { name: 'Scanner', href: '/', description: 'Test your fingerprint' },
-    { name: 'Generator', href: '/generator', description: 'Generate fingerprints' },
-    { name: 'Challenge', href: '/challenge', description: 'Prove you\'re human' },
+    { name: 'Tools', href: '/tools', description: 'All fingerprint tests' },
+    { name: 'Challenge', href: '/tools/challenge', description: 'Prove you\'re human' },
+    { name: 'Automation', href: '/automation', description: 'Schedule scans & webhooks' },
     { name: 'Learn', href: '/learn', description: 'Education center' },
+    { name: 'Settings', href: '/settings', description: 'Configure risk models & access' },
   ];
 
   // Open AI chat by dispatching custom event

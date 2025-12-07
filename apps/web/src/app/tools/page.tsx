@@ -17,7 +17,7 @@ const TOOLS: Tool[] = [
   {
     name: 'Canvas Fingerprint',
     description: 'Test your canvas fingerprint and check if noise protection is active',
-    href: '/tools/canvas',
+    href: '/tools/canvas-fingerprint',
     icon: '🎨',
     category: 'fingerprint',
     status: 'live',
@@ -33,7 +33,7 @@ const TOOLS: Tool[] = [
   {
     name: 'Font Detection',
     description: 'Detect installed fonts and see how unique your font fingerprint is',
-    href: '/tools/fonts',
+    href: '/tools/font-fingerprint',
     icon: '🔤',
     category: 'fingerprint',
     status: 'live',
@@ -49,7 +49,7 @@ const TOOLS: Tool[] = [
   {
     name: 'WebRTC Leak Test',
     description: 'Check if your real IP is exposed through WebRTC connections',
-    href: '/tools/webrtc',
+    href: '/tools/webrtc-leak',
     icon: '📡',
     category: 'network',
     status: 'live',
@@ -57,7 +57,7 @@ const TOOLS: Tool[] = [
   {
     name: 'TLS/JA3 Fingerprint',
     description: 'Analyze your TLS fingerprint used by bot detection systems',
-    href: '/tools/tls',
+    href: '/tools/tls-fingerprint',
     icon: '🔐',
     category: 'network',
     status: 'live',
@@ -89,7 +89,7 @@ const TOOLS: Tool[] = [
   {
     name: 'Profile Generator',
     description: 'Generate realistic browser profiles for anti-detect browsers',
-    href: '/generator',
+    href: '/tools/generator',
     icon: '⚙️',
     category: 'analysis',
     status: 'live',
@@ -97,7 +97,7 @@ const TOOLS: Tool[] = [
   {
     name: 'Challenge Arena',
     description: 'Test your setup against real-world detection challenges',
-    href: '/challenge',
+    href: '/tools/challenge',
     icon: '🎯',
     category: 'analysis',
     status: 'live',
@@ -108,6 +108,14 @@ const TOOLS: Tool[] = [
     href: '/tools/bot',
     icon: '🤖',
     category: 'analysis',
+    status: 'live',
+  },
+  {
+    name: 'Timezone Checker',
+    description: 'Compare browser timezone against IP geolocation for mismatch signals',
+    href: '/tools/timezone-check',
+    icon: '⏰',
+    category: 'network',
     status: 'live',
   },
 ];

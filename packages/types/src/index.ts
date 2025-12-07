@@ -12,6 +12,7 @@ export interface NavigatorData {
   hardwareConcurrency: number;
   deviceMemory?: number;
   maxTouchPoints: number;
+  webdriver?: boolean;
   vendor?: string;
   vendorSub?: string;
   product?: string;
@@ -47,6 +48,9 @@ export interface WebGLData {
 export interface CanvasData {
   hash: string;
   isNoisyCanvas?: boolean;
+  noiseDetected?: boolean;
+  supported?: boolean;
+  renderTime?: number;
   imageData?: string;
 }
 
@@ -191,6 +195,90 @@ export interface TrustScore {
   criticalIssues: Issue[];
   warnings: Issue[];
   recommendations: string[];
+}
+
+// ============================================
+// Automation & Webhooks
+// ============================================
+
+export type AutomationCadence = 'manual' | 'interval' | 'hourly' | 'daily' | 'cron';
+
+export interface AutomationSchedule {
+  intervalMinutes?: number;
+  dailyTime?: string;
+  cron?: string;
+  startAt?: number;
+  timezone?: string;
+}
+
+export interface AutomationTarget {
+  type: 'scan' | 'report';
+  label: string;
+  batchSize: number;
+  profileId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface AutomationTaskDTO {
+  id: string;
+  name: string;
+  projectId: string | null;
+  status: 'inactive' | 'scheduled' | 'queued' | 'running' | 'paused' | 'failed';
+  cadence: AutomationCadence;
+  timezone: string;
+  schedule: AutomationSchedule | null;
+  targets: AutomationTarget[];
+  lastRunAt: number | null;
+  nextRunAt: number | null;
+  lastStatus: string | null;
+  retryLimit: number;
+  createdAt: number;
+  updatedAt: number;
+  lastResult?: Record<string, unknown> | null;
+  webhookUrl?: string | null;
+  webhookSecret?: string | null;
+}
+
+export interface AutomationTaskRunDTO {
+  id: string;
+  taskId: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  queuedAt: number;
+  startedAt: number | null;
+  completedAt: number | null;
+  durationMs: number | null;
+  batchesProcessed: number | null;
+  successCount: number | null;
+  failCount: number | null;
+  webhookStatus: string | null;
+  responseCode: number | null;
+  error: string | null;
+  sampleReportId: string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface WebhookSubscriptionDTO {
+  id: string;
+  projectId: string | null;
+  name: string;
+  url: string;
+  status: 'active' | 'paused';
+  events: string[];
+  createdAt: number;
+  updatedAt: number;
+  lastDeliveryAt: number | null;
+}
+
+export interface WebhookDeliveryDTO {
+  id: string;
+  subscriptionId: string;
+  event: string;
+  status: 'delivered' | 'failed';
+  responseCode: number | null;
+  error: string | null;
+  deliveredAt: number;
+  durationMs: number | null;
+  payload: Record<string, unknown>;
 }
 
 // ============================================

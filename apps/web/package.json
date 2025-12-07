@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
     "build:cf": "npx @cloudflare/next-on-pages",
-    "preview": "npx wrangler pages dev .vercel/output/static --compatibility-date=2024-01-01 --compatibility-flag=nodejs_compat",
+    "preview": "npx wrangler pages dev .vercel/output/static --compatibility-date=2024-10-11 --compatibility-flag=nodejs_compat_v2",
     "deploy": "npx wrangler pages deploy .vercel/output/static --project-name=anti-detect-web",
     "start": "next start",
     "lint": "next lint",

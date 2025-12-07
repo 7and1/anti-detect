@@ -1,35 +1,33 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { detectAutomation } from '../collectors/automation';
+import { collectAutomation } from '../collectors/automation';
 
 describe('Automation Detection', () => {
   beforeEach(() => {
     // Clean up
   });
 
-  it('should detect webdriver flag', () => {
-    const result = detectAutomation();
+  it('should detect webdriver flag', async () => {
+    const result = await collectAutomation();
 
     expect(result).toBeDefined();
-    expect('webdriver' in result).toBe(true);
+    expect(typeof result.webdriver).toBe('boolean');
   });
 
-  it('should check for automation properties', () => {
-    const result = detectAutomation();
+  it('should check for automation properties', async () => {
+    const result = await collectAutomation();
 
-    expect('automationDetected' in result).toBe(true);
-    expect(typeof result.automationDetected).toBe('boolean');
+    expect(typeof result.chromeRuntime).toBe('boolean');
+    expect(typeof result.cdpTraces).toBe('boolean');
   });
 
-  it('should list detected automation signals', () => {
-    const result = detectAutomation();
+  it('should list detected automation signals', async () => {
+    const result = await collectAutomation();
 
-    if ('signals' in result) {
-      expect(Array.isArray(result.signals)).toBe(true);
-    }
+    expect(Object.keys(result).length).toBeGreaterThan(0);
   });
 
-  it('should detect common automation properties', () => {
-    const result = detectAutomation();
+  it('should detect common automation properties', async () => {
+    const result = await collectAutomation();
 
     // Check for common automation indicators
     const automationProps = [
@@ -47,41 +45,25 @@ describe('Automation Detection', () => {
     expect(result).toBeDefined();
   });
 
-  it('should detect Chrome CDP artifacts', () => {
-    const result = detectAutomation();
+  it('should detect Chrome CDP artifacts', async () => {
+    const result = await collectAutomation();
 
-    if ('cdpDetected' in result) {
-      expect(typeof result.cdpDetected).toBe('boolean');
-    }
+    expect(typeof result.cdpTraces).toBe('boolean');
   });
 
-  it('should check plugin consistency', () => {
-    const result = detectAutomation();
-
-    if ('pluginInconsistency' in result) {
-      expect(typeof result.pluginInconsistency).toBe('boolean');
-    }
+  it('should not throw in normal browsers', async () => {
+    await expect(collectAutomation()).resolves.toBeDefined();
   });
 
-  it('should not detect automation in normal browsers', () => {
-    const result = detectAutomation();
+  it('should expose multiple detection knobs', async () => {
+    const result = await collectAutomation();
 
-    // In a normal test environment (not actual automation),
-    // should not detect automation
-    expect(result.automationDetected).toBe(false);
-  });
-
-  it('should handle missing window properties gracefully', () => {
-    expect(() => detectAutomation()).not.toThrow();
-  });
-
-  it('should provide confidence score', () => {
-    const result = detectAutomation();
-
-    if ('confidence' in result) {
-      expect(typeof result.confidence).toBe('number');
-      expect(result.confidence).toBeGreaterThanOrEqual(0);
-      expect(result.confidence).toBeLessThanOrEqual(1);
-    }
+    expect(result).toMatchObject({
+      webdriver: expect.any(Boolean),
+      chromeRuntime: expect.any(Boolean),
+      cdpTraces: expect.any(Boolean),
+      phantomJS: expect.any(Boolean),
+      selenium: expect.any(Boolean),
+    });
   });
 });

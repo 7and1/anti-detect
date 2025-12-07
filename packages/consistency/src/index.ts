@@ -11,7 +11,7 @@
 
 // Main exports
 export { ConsistencyEngine, defaultEngine, evaluateConsistency } from './engine';
-export { calculateTrustScore, quickScore } from './scorer';
+export { calculateTrustScore, quickScore, getPresetWeights } from './scorer';
 
 // Types
 export type {
@@ -22,7 +22,7 @@ export type {
   RuleResult,
   ScoringWeights,
 } from './types';
-export { DEFAULT_WEIGHTS } from './types';
+export { DEFAULT_WEIGHTS, DEFAULT_WEIGHT_PRESETS } from './types';
 
 // Individual rule sets (for selective use)
 export {

@@ -1,43 +1,62 @@
 import type { CanvasData } from '@anti-detect/types';
 
 export async function collectCanvas(): Promise<CanvasData> {
-  const canvas = document.createElement('canvas');
-  canvas.width = 200;
-  canvas.height = 50;
+  const getNow = () => (typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now());
+  const start = getNow();
 
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 50;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return {
+        hash: 'not-available',
+        isNoisyCanvas: false,
+        noiseDetected: false,
+        supported: false,
+      };
+    }
+
+    // Draw test pattern
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.fillStyle = '#f60';
+    ctx.fillRect(0, 0, 200, 50);
+    ctx.fillStyle = '#069';
+    ctx.fillText('Anti-detect.com', 2, 2);
+    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+    ctx.fillText('Canvas Test', 4, 17);
+
+    // Get image data
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL();
+
+    // Generate hash
+    const hash = await hashCanvasData(dataUrl);
+
+    // Detect noise (canvas protection)
+    const noiseDetected = detectCanvasNoise(imageData);
+
+    const renderTime = getNow() - start;
+
     return {
-      hash: 'not-available',
+      hash,
+      isNoisyCanvas: noiseDetected,
+      noiseDetected,
+      imageData: dataUrl,
+      supported: true,
+      renderTime,
+    };
+  } catch {
+    return {
+      hash: 'canvas-error',
       isNoisyCanvas: false,
+      noiseDetected: false,
+      supported: false,
     };
   }
-
-  // Draw test pattern
-  ctx.textBaseline = 'top';
-  ctx.font = '14px Arial';
-  ctx.fillStyle = '#f60';
-  ctx.fillRect(0, 0, 200, 50);
-  ctx.fillStyle = '#069';
-  ctx.fillText('Anti-detect.com', 2, 2);
-  ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
-  ctx.fillText('Canvas Test', 4, 17);
-
-  // Get image data
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const dataUrl = canvas.toDataURL();
-
-  // Generate hash
-  const hash = await hashCanvasData(dataUrl);
-
-  // Detect noise (canvas protection)
-  const isNoisyCanvas = detectCanvasNoise(imageData);
-
-  return {
-    hash,
-    isNoisyCanvas,
-    imageData: dataUrl,
-  };
 }
 
 async function hashCanvasData(dataUrl: string): Promise<string> {

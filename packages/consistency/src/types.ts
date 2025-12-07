@@ -69,4 +69,48 @@ export const DEFAULT_WEIGHTS: ScoringWeights = {
   automation: 0.15,
 };
 
+export interface WeightPreset {
+  id: string;
+  name: string;
+  description: string;
+  weights: ScoringWeights;
+}
+
+export const DEFAULT_WEIGHT_PRESETS: WeightPreset[] = [
+  {
+    id: 'balanced',
+    name: 'Balanced Baseline',
+    description: 'General-purpose mix mirroring DEFAULT_WEIGHTS.',
+    weights: DEFAULT_WEIGHTS,
+  },
+  {
+    id: 'ad-fraud',
+    name: 'Ad-Fraud Hunter',
+    description: 'Prioritize network anomalies and automation traces.',
+    weights: {
+      network: 0.30,
+      navigator: 0.10,
+      graphics: 0.15,
+      audio: 0.05,
+      fonts: 0.10,
+      locale: 0.10,
+      automation: 0.20,
+    },
+  },
+  {
+    id: 'finance',
+    name: 'Banking & KYC',
+    description: 'Heavier weight on navigator, locale, and automation hygiene.',
+    weights: {
+      network: 0.20,
+      navigator: 0.20,
+      graphics: 0.15,
+      audio: 0.05,
+      fonts: 0.10,
+      locale: 0.15,
+      automation: 0.15,
+    },
+  },
+];
+
 export type { CheckResult, CheckStatus, Severity };

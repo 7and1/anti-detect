@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { collectCanvasFingerprint } from '../collectors/canvas';
+import { collectCanvas } from '../collectors/canvas';
 
 describe('Canvas Collector', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should generate a canvas fingerprint', () => {
-    const result = collectCanvasFingerprint();
+  it('should generate a canvas fingerprint', async () => {
+    const result = await collectCanvas();
 
     expect(result).toBeDefined();
     expect(result.hash).toBeDefined();
@@ -15,29 +15,29 @@ describe('Canvas Collector', () => {
     expect(result.hash.length).toBeGreaterThan(0);
   });
 
-  it('should include canvas support flag', () => {
-    const result = collectCanvasFingerprint();
+  it('should include canvas support flag', async () => {
+    const result = await collectCanvas();
 
     expect('supported' in result).toBe(true);
     expect(typeof result.supported).toBe('boolean');
   });
 
-  it('should generate consistent hash for same browser', () => {
-    const result1 = collectCanvasFingerprint();
-    const result2 = collectCanvasFingerprint();
+  it('should generate consistent hash for same browser', async () => {
+    const result1 = await collectCanvas();
+    const result2 = await collectCanvas();
 
     expect(result1.hash).toBe(result2.hash);
   });
 
-  it('should detect canvas noise/protection', () => {
-    const result = collectCanvasFingerprint();
+  it('should detect canvas noise/protection', async () => {
+    const result = await collectCanvas();
 
     if ('noiseDetected' in result) {
       expect(typeof result.noiseDetected).toBe('boolean');
     }
   });
 
-  it('should handle canvas creation failure gracefully', () => {
+  it('should handle canvas creation failure gracefully', async () => {
     // Mock canvas creation to fail
     const originalCreateElement = document.createElement;
     document.createElement = vi.fn((tagName: string) => {
@@ -47,14 +47,14 @@ describe('Canvas Collector', () => {
       return originalCreateElement.call(document, tagName);
     });
 
-    expect(() => collectCanvasFingerprint()).not.toThrow();
+    await expect(collectCanvas()).resolves.toBeDefined();
 
     // Restore
     document.createElement = originalCreateElement;
   });
 
-  it('should include timestamp or metrics if available', () => {
-    const result = collectCanvasFingerprint();
+  it('should include timestamp or metrics if available', async () => {
+    const result = await collectCanvas();
 
     // Check if performance metrics are included
     if ('renderTime' in result) {
@@ -62,13 +62,10 @@ describe('Canvas Collector', () => {
     }
   });
 
-  it('should produce different hashes with noise injection', () => {
+  it('should produce different hashes with noise injection', async () => {
     // This test simulates what happens with canvas noise extensions
-    const mockGetContext = vi.fn();
-    const mockCanvas = document.createElement('canvas');
-
     // First call
-    const result1 = collectCanvasFingerprint();
+    const result1 = await collectCanvas();
 
     // Simulate random noise by modifying canvas methods
     const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
@@ -78,7 +75,7 @@ describe('Canvas Collector', () => {
       return data + Math.random().toString();
     };
 
-    const result2 = collectCanvasFingerprint();
+    const result2 = await collectCanvas();
 
     // Restore
     HTMLCanvasElement.prototype.toDataURL = originalToDataURL;

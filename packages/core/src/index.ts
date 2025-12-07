@@ -10,6 +10,8 @@
 
 export { collect, collectAll } from './collect';
 export * from './collectors';
+export { AutomationClient } from './automation-client';
+export type { AutomationTaskPayload } from './automation-client';
 export type {
   FingerprintData,
   NavigatorData,

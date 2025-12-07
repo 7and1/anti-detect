@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { collectScreenInfo } from '../collectors/screen';
+import { collectScreen } from '../collectors/screen';
 
 describe('Screen Collector', () => {
   beforeEach(() => {
     // Reset any mocks
   });
 
-  it('should collect screen dimensions', () => {
-    const result = collectScreenInfo();
+  it('should collect screen dimensions', async () => {
+    const result = await collectScreen();
 
     expect(result).toBeDefined();
     expect(result.width).toBeDefined();
@@ -18,8 +18,8 @@ describe('Screen Collector', () => {
     expect(result.height).toBeGreaterThan(0);
   });
 
-  it('should collect available dimensions', () => {
-    const result = collectScreenInfo();
+  it('should collect available dimensions', async () => {
+    const result = await collectScreen();
 
     expect(result.availWidth).toBeDefined();
     expect(result.availHeight).toBeDefined();
@@ -27,8 +27,8 @@ describe('Screen Collector', () => {
     expect(typeof result.availHeight).toBe('number');
   });
 
-  it('should collect color depth', () => {
-    const result = collectScreenInfo();
+  it('should collect color depth', async () => {
+    const result = await collectScreen();
 
     expect(result.colorDepth).toBeDefined();
     expect(typeof result.colorDepth).toBe('number');
@@ -36,42 +36,42 @@ describe('Screen Collector', () => {
     expect([24, 30, 32, 48]).toContain(result.colorDepth);
   });
 
-  it('should collect pixel depth', () => {
-    const result = collectScreenInfo();
+  it('should collect pixel depth', async () => {
+    const result = await collectScreen();
 
     expect(result.pixelDepth).toBeDefined();
     expect(typeof result.pixelDepth).toBe('number');
   });
 
-  it('should collect device pixel ratio', () => {
-    const result = collectScreenInfo();
+  it('should collect device pixel ratio', async () => {
+    const result = await collectScreen();
 
     expect(result.devicePixelRatio).toBeDefined();
     expect(typeof result.devicePixelRatio).toBe('number');
     expect(result.devicePixelRatio).toBeGreaterThan(0);
   });
 
-  it('should collect orientation information', () => {
-    const result = collectScreenInfo();
+  it('should collect orientation information', async () => {
+    const result = await collectScreen();
 
     if ('orientation' in result) {
       expect(result.orientation).toBeDefined();
     }
   });
 
-  it('availWidth should be less than or equal to width', () => {
-    const result = collectScreenInfo();
+  it('availWidth should be less than or equal to width', async () => {
+    const result = await collectScreen();
 
     expect(result.availWidth).toBeLessThanOrEqual(result.width);
   });
 
-  it('availHeight should be less than or equal to height', () => {
-    const result = collectScreenInfo();
+  it('availHeight should be less than or equal to height', async () => {
+    const result = await collectScreen();
 
     expect(result.availHeight).toBeLessThanOrEqual(result.height);
   });
 
-  it('should handle edge cases', () => {
-    expect(() => collectScreenInfo()).not.toThrow();
+  it('should handle edge cases', async () => {
+    await expect(collectScreen()).resolves.toBeDefined();
   });
 });

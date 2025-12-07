@@ -13,6 +13,7 @@ export async function collectNavigator(): Promise<NavigatorData> {
     hardwareConcurrency: nav.hardwareConcurrency || 0,
     deviceMemory: (nav as any).deviceMemory,
     maxTouchPoints: nav.maxTouchPoints || 0,
+    webdriver: nav.webdriver === true,
     vendor: nav.vendor,
     vendorSub: nav.vendorSub,
     product: nav.product,

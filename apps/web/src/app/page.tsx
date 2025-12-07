@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { Header } from '@/components/ui/Header';
 import { Footer } from '@/components/ui/Footer';
 import { TrustScoreGauge, DetectionCard, LayerIcons, ScannerProgress } from '@/components/scanner';
@@ -9,16 +10,131 @@ import { PrivacyAIChat } from '@/components/ai/PrivacyAIChat';
 import { InvisibleTurnstile } from '@/components/ui/Turnstile';
 import { useFingerprint } from '@/hooks/useFingerprint';
 import { useTurnstile } from '@/hooks/useTurnstile';
-import { calculateTrustScore } from '@anti-detect/consistency';
+import { calculateTrustScore, DEFAULT_WEIGHT_PRESETS } from '@anti-detect/consistency';
+import type { ScoringWeights } from '@anti-detect/consistency';
 import type { TrustScore } from '@anti-detect/types';
 
 type ScanStatus = 'idle' | 'verifying' | 'scanning' | 'complete' | 'error';
+
+interface RiskProfileOption {
+  id: string;
+  name: string;
+  description?: string;
+  weights: ScoringWeights;
+  source: 'builtin' | 'custom';
+}
+
+const BASE_PRESET = DEFAULT_WEIGHT_PRESETS[0] || {
+  id: 'balanced',
+  name: 'Balanced',
+  description: 'Default risk model',
+  weights: {
+    network: 0.2,
+    navigator: 0.15,
+    graphics: 0.2,
+    audio: 0.1,
+    fonts: 0.1,
+    locale: 0.1,
+    automation: 0.15,
+  } satisfies ScoringWeights,
+};
+
+const BUILTIN_PROFILES: RiskProfileOption[] = DEFAULT_WEIGHT_PRESETS.map((preset) => ({
+  id: preset.id,
+  name: preset.name,
+  description: preset.description,
+  weights: preset.weights,
+  source: 'builtin',
+}));
+
+const FALLBACK_PROFILE: RiskProfileOption = {
+  id: BASE_PRESET.id,
+  name: BASE_PRESET.name,
+  description: BASE_PRESET.description,
+  weights: BASE_PRESET.weights,
+  source: 'builtin',
+};
+
+const PRIMARY_PROFILE: RiskProfileOption = BUILTIN_PROFILES[0] || FALLBACK_PROFILE;
 
 export default function HomePage() {
   const { collect, progress } = useFingerprint();
   const { token, onSuccess, onError, onExpire, isVerified } = useTurnstile();
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [result, setResult] = useState<TrustScore | null>(null);
+  const [profiles, setProfiles] = useState<RiskProfileOption[]>(BUILTIN_PROFILES);
+  const [selectedProfile, setSelectedProfile] = useState<string>(PRIMARY_PROFILE.id);
+  const [profilesLoading, setProfilesLoading] = useState(false);
+  const [profilesError, setProfilesError] = useState<string | null>(null);
+  const [lastProfileId, setLastProfileId] = useState<string>(PRIMARY_PROFILE.id);
+
+  const activeProfile = useMemo<RiskProfileOption>(() => {
+    return (
+      profiles.find((profile) => profile.id === selectedProfile) ||
+      profiles[0] ||
+      PRIMARY_PROFILE ||
+      FALLBACK_PROFILE
+    );
+  }, [profiles, selectedProfile]);
+
+  const activeWeights = useMemo(() => {
+    return activeProfile?.weights || PRIMARY_PROFILE.weights || FALLBACK_PROFILE.weights;
+  }, [activeProfile]);
+
+  const activeProfileId = activeProfile?.id || PRIMARY_PROFILE.id || FALLBACK_PROFILE.id;
+  const lastProfile = useMemo(
+    () => profiles.find((profile) => profile.id === lastProfileId) || activeProfile || FALLBACK_PROFILE,
+    [profiles, lastProfileId, activeProfile]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem('risk-profile');
+    if (stored) {
+      setSelectedProfile(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    setProfilesLoading(true);
+    fetch('/api/score/profiles')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load profiles');
+        return res.json();
+      })
+      .then((data) => {
+        if (!mounted) return;
+        const remote: RiskProfileOption[] = (data?.profiles || []).map((profile: any) => ({
+          id: profile.slug || profile.id,
+          name: profile.name,
+          description: profile.description,
+          weights: profile.weights as ScoringWeights,
+          source: 'custom',
+        }));
+        if (remote.length) {
+          setProfiles([...BUILTIN_PROFILES, ...remote]);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load scoring profiles', err);
+        if (mounted) {
+          setProfilesError('Using built-in presets while API profiles unavailable.');
+        }
+      })
+      .finally(() => {
+        if (mounted) setProfilesLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('risk-profile', selectedProfile);
+  }, [selectedProfile]);
 
   const handleScan = useCallback(async () => {
     // If not verified, show turnstile first
@@ -32,14 +148,15 @@ export default function HomePage() {
 
     try {
       const fingerprint = await collect();
-      const trustScore = calculateTrustScore(fingerprint);
+      const trustScore = calculateTrustScore(fingerprint, undefined, activeWeights);
       setResult(trustScore);
+      setLastProfileId(activeProfileId);
       setStatus('complete');
     } catch (err) {
       console.error('Scan failed:', err);
       setStatus('error');
     }
-  }, [collect, isVerified]);
+  }, [collect, isVerified, activeWeights, activeProfileId]);
 
   // When turnstile verification succeeds, start scan
   const handleTurnstileSuccess = useCallback((t: string) => {
@@ -48,15 +165,16 @@ export default function HomePage() {
     setStatus('scanning');
     collect()
       .then((fingerprint) => {
-        const trustScore = calculateTrustScore(fingerprint);
+        const trustScore = calculateTrustScore(fingerprint, undefined, activeWeights);
         setResult(trustScore);
+        setLastProfileId(activeProfileId);
         setStatus('complete');
       })
       .catch((err) => {
         console.error('Scan failed:', err);
         setStatus('error');
       });
-  }, [collect, onSuccess]);
+  }, [collect, onSuccess, activeWeights, activeProfileId]);
 
   const layerNames: Record<string, string> = {
     network: 'Network Layer',
@@ -293,6 +411,51 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Risk Model Selector */}
+        <section className="py-8 px-4">
+          <div className="max-w-4xl mx-auto p-6 rounded-lg bg-bg-secondary border border-border">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-text-muted">Risk Model</p>
+                <h2 className="text-2xl font-bold text-text-primary">
+                  {activeProfile?.name || 'Balanced Baseline'}
+                </h2>
+                <p className="text-sm text-text-secondary max-w-2xl">
+                  {activeProfile?.description || 'Adjust how each detection layer influences the score before you scan.'}
+                </p>
+              </div>
+              <div className="w-full md:w-64 flex flex-col gap-2">
+                <select
+                  value={selectedProfile}
+                  onChange={(event) => setSelectedProfile(event.target.value)}
+                  className="w-full rounded-md border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+                >
+                  {profiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name} {profile.source === 'custom' ? '• Custom' : ''}
+                    </option>
+                  ))}
+                </select>
+                {profilesLoading && <span className="text-xs text-text-muted">Loading presets…</span>}
+                {profilesError && <span className="text-xs text-error">{profilesError}</span>}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-text-muted mt-4">
+              {Object.entries(activeWeights).map(([layer, weight]) => (
+                <span
+                  key={layer}
+                  className="px-3 py-1 rounded-full border border-border/70 bg-bg-primary font-mono"
+                >
+                  {layer}: {(weight * 100).toFixed(0)}%
+                </span>
+              ))}
+            </div>
+            <p className="text-xs text-text-muted mt-3">
+              Last scan ran with <span className="font-semibold text-text-primary">{lastProfile?.name}</span>.
+            </p>
+          </div>
+        </section>
+
         {/* Results Section */}
         {status === 'complete' && result && (
           <section className="py-12 px-4">
@@ -395,9 +558,9 @@ export default function HomePage() {
                       </a>
                     </div>
                     <p className="text-xs text-text-muted mt-3">
-                      <a href="/learn/anti-detect-browsers" className="text-accent hover:underline">
+                      <Link href="/learn/anti-detect-browsers" className="text-accent hover:underline">
                         Compare all anti-detect browsers →
-                      </a>
+                      </Link>
                     </p>
                   </div>
                 </div>

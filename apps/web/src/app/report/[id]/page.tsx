@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export const runtime = 'edge';
 import { useParams } from 'next/navigation';
@@ -14,6 +14,7 @@ interface ReportData {
   createdAt: string;
   trustScore: number;
   grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  historyKey?: string;
   fingerprint: {
     navigator: {
       userAgent: string;
@@ -62,6 +63,217 @@ interface ReportData {
   };
 }
 
+interface HistoryEntry {
+  sessionId: string;
+  reportId: string;
+  trustScore: number;
+  createdAt: number;
+  issuesCount: number;
+  warningsCount: number;
+  deltas: {
+    score: number;
+    issues: number;
+    warnings: number;
+    fingerprintChanged: boolean;
+  };
+  layerChanges: Array<{
+    layer: string;
+    delta: number;
+    current: number;
+  }>;
+}
+
+interface HistorySummary {
+  latestScore: number;
+  deltaScore: number;
+  issuesDelta: number;
+  fingerprintChanged: boolean;
+}
+
+interface TrendCardProps {
+  label: string;
+  value: string;
+  delta: number;
+}
+
+interface TrendStatusProps {
+  changed: boolean;
+}
+
+const TrendCard = ({ label, value, delta }: TrendCardProps) => (
+  <div className="p-4 rounded-lg bg-bg-primary border border-border/70">
+    <p className="text-xs uppercase tracking-wide text-text-muted mb-1">{label}</p>
+    <p className="text-2xl font-semibold text-text-primary">{value}</p>
+    <p className={`text-sm font-mono ${delta >= 0 ? 'text-success' : 'text-error'}`}>
+      {delta >= 0 ? '+' : ''}
+      {delta}
+    </p>
+  </div>
+);
+
+const TrendStatus = ({ changed }: TrendStatusProps) => (
+  <div className="p-4 rounded-lg bg-bg-primary border border-border/70 flex flex-col">
+    <p className="text-xs uppercase tracking-wide text-text-muted mb-1">Fingerprint Drift</p>
+    <p className={`text-lg font-semibold ${changed ? 'text-warning' : 'text-success'}`}>
+      {changed ? 'Changes detected' : 'Stable'}
+    </p>
+    <p className="text-xs text-text-muted">
+      {changed ? 'Environment shifted vs previous scan' : 'Matches previous baseline'}
+    </p>
+  </div>
+);
+
+function generateMockReport(id: string): ReportData {
+  return {
+    id,
+    createdAt: new Date().toISOString(),
+    trustScore: 72,
+    grade: 'C',
+    historyKey: id,
+    fingerprint: {
+      navigator: {
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        platform: 'Win32',
+        language: 'en-US',
+        languages: ['en-US', 'en'],
+        hardwareConcurrency: 8,
+        deviceMemory: 8,
+      },
+      screen: {
+        width: 1920,
+        height: 1080,
+        colorDepth: 24,
+        pixelRatio: 1,
+      },
+      webgl: {
+        vendor: 'Google Inc. (NVIDIA)',
+        renderer: 'ANGLE (NVIDIA GeForce RTX 3080)',
+        hash: 'a1b2c3d4e5f6',
+      },
+      canvas: {
+        hash: 'f6e5d4c3b2a1',
+        isNoisy: false,
+      },
+      audio: {
+        hash: '123456789abc',
+      },
+      fonts: {
+        count: 45,
+        hash: 'abc123def456',
+      },
+      timezone: {
+        offset: -480,
+        name: 'America/Los_Angeles',
+      },
+    },
+    detections: [
+      { layer: 'Navigator', score: 85, issues: [] },
+      { layer: 'Graphics', score: 70, issues: ['Canvas unprotected'] },
+      { layer: 'Network', score: 65, issues: ['WebRTC leak detected'] },
+      { layer: 'Automation', score: 95, issues: [] },
+      { layer: 'Fonts', score: 60, issues: ['Rare font combination'] },
+      { layer: 'Locale', score: 80, issues: [] },
+    ],
+    consistency: {
+      passed: 12,
+      failed: 3,
+      warnings: [
+        'Timezone does not match IP geolocation',
+        'Canvas fingerprint is stable (trackable)',
+        'WebRTC exposes local IP addresses',
+      ],
+    },
+  };
+}
+
+function normalizeReportResponse(payload: any, fallbackId: string): ReportData {
+  if (!payload) {
+    return generateMockReport(fallbackId);
+  }
+
+  const fallback = generateMockReport(fallbackId);
+  const layers = payload.scanData?.layers ?? {};
+  const detections = Object.entries(layers).map(([layer, layerInfo]) => {
+    const info = (layerInfo || {}) as { score?: number; checks?: Array<{ status: string; message?: string; id?: string }>; };
+    const score = typeof info.score === 'number' ? info.score : 0;
+    const issues = Array.isArray(info.checks)
+      ? info.checks
+          .filter((check) => check.status && check.status !== 'pass')
+          .map((check) => check.message || check.id || 'Issue detected')
+      : [];
+    return { layer, score, issues };
+  });
+
+  return {
+    ...fallback,
+    id: payload.reportId || payload.id || fallback.id,
+    createdAt: payload.createdAt || fallback.createdAt,
+    trustScore: typeof payload.trustScore === 'number' ? payload.trustScore : fallback.trustScore,
+    grade: payload.grade || fallback.grade,
+    historyKey: payload.historyKey || fallback.historyKey,
+    detections: detections.length ? detections : fallback.detections,
+    consistency: {
+      passed: fallback.consistency.passed,
+      failed: payload.scanData?.criticalIssues?.length ?? fallback.consistency.failed,
+      warnings:
+        payload.scanData?.warnings?.map((warning: any) => warning.message || warning.layer || 'Warning detected') ||
+        fallback.consistency.warnings,
+    },
+  };
+}
+
+function generateMockHistory(): { history: HistoryEntry[]; summary: HistorySummary } {
+  const now = Date.now();
+  const history: HistoryEntry[] = [0, 1, 2, 3].map((index) => {
+    const score = 70 + index * 2;
+    const prevScore = index === 3 ? score : score - 2;
+    return {
+      sessionId: `mock-session-${index}`,
+      reportId: `mock-report-${index}`,
+      trustScore: score,
+      createdAt: now - index * 86400000,
+      issuesCount: Math.max(0, 5 - index),
+      warningsCount: Math.max(0, 4 - index),
+      deltas: {
+        score: index === 3 ? 0 : score - prevScore,
+        issues: -1,
+        warnings: -1,
+        fingerprintChanged: index === 1,
+      },
+      layerChanges: [
+        {
+          layer: 'navigator',
+          delta: index === 0 ? 3 : 0,
+          current: score,
+        },
+      ],
+    };
+  });
+
+  return {
+    history,
+    summary: {
+      latestScore: history[0]?.trustScore ?? 0,
+      deltaScore: history[0]?.deltas?.score ?? 0,
+      issuesDelta: history[0]?.deltas?.issues ?? 0,
+      fingerprintChanged: history[0]?.deltas?.fingerprintChanged ?? false,
+    },
+  };
+}
+
+function formatHistoryDate(timestamp: number) {
+  try {
+    return new Date(timestamp).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return new Date().toLocaleString();
+  }
+}
+
 export default function ReportPage() {
   const params = useParams();
   const reportId = params?.id as string;
@@ -70,6 +282,42 @@ export default function ReportPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historySummary, setHistorySummary] = useState<HistorySummary | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const fetchHistory = useCallback(async (historyKey: string) => {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch(`/api/report/history/${historyKey}?limit=8`);
+      if (!response.ok) {
+        throw new Error('History unavailable');
+      }
+      const payload = await response.json();
+      if (Array.isArray(payload.history) && payload.history.length > 0) {
+        setHistory(payload.history);
+        setHistorySummary(
+          payload.summary || {
+            latestScore: payload.history[0]?.trustScore ?? 0,
+            deltaScore: payload.history[0].deltas?.score ?? 0,
+            issuesDelta: payload.history[0].deltas?.issues ?? 0,
+            fingerprintChanged: payload.history[0].deltas?.fingerprintChanged ?? false,
+          }
+        );
+      } else {
+        const mock = generateMockHistory();
+        setHistory(mock.history);
+        setHistorySummary(mock.summary);
+      }
+    } catch (err) {
+      console.error(err);
+      const mock = generateMockHistory();
+      setHistory(mock.history);
+      setHistorySummary(mock.summary);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -81,10 +329,11 @@ export default function ReportPage() {
           } else {
             setError('Failed to load report');
           }
+          setReport(generateMockReport(reportId));
           return;
         }
         const data = await response.json();
-        setReport(data);
+        setReport(normalizeReportResponse(data, reportId));
       } catch {
         // For demo, generate mock data
         setReport(generateMockReport(reportId));
@@ -98,67 +347,11 @@ export default function ReportPage() {
     }
   }, [reportId]);
 
-  const generateMockReport = (id: string): ReportData => {
-    return {
-      id,
-      createdAt: new Date().toISOString(),
-      trustScore: 72,
-      grade: 'C',
-      fingerprint: {
-        navigator: {
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          platform: 'Win32',
-          language: 'en-US',
-          languages: ['en-US', 'en'],
-          hardwareConcurrency: 8,
-          deviceMemory: 8,
-        },
-        screen: {
-          width: 1920,
-          height: 1080,
-          colorDepth: 24,
-          pixelRatio: 1,
-        },
-        webgl: {
-          vendor: 'Google Inc. (NVIDIA)',
-          renderer: 'ANGLE (NVIDIA GeForce RTX 3080)',
-          hash: 'a1b2c3d4e5f6',
-        },
-        canvas: {
-          hash: 'f6e5d4c3b2a1',
-          isNoisy: false,
-        },
-        audio: {
-          hash: '123456789abc',
-        },
-        fonts: {
-          count: 45,
-          hash: 'abc123def456',
-        },
-        timezone: {
-          offset: -480,
-          name: 'America/Los_Angeles',
-        },
-      },
-      detections: [
-        { layer: 'Navigator', score: 85, issues: [] },
-        { layer: 'Graphics', score: 70, issues: ['Canvas unprotected'] },
-        { layer: 'Network', score: 65, issues: ['WebRTC leak detected'] },
-        { layer: 'Automation', score: 95, issues: [] },
-        { layer: 'Fonts', score: 60, issues: ['Rare font combination'] },
-        { layer: 'Locale', score: 80, issues: [] },
-      ],
-      consistency: {
-        passed: 12,
-        failed: 3,
-        warnings: [
-          'Timezone does not match IP geolocation',
-          'Canvas fingerprint is stable (trackable)',
-          'WebRTC exposes local IP addresses',
-        ],
-      },
-    };
-  };
+  useEffect(() => {
+    if (report?.historyKey) {
+      fetchHistory(report.historyKey);
+    }
+  }, [report?.historyKey, fetchHistory]);
 
   const handleCopyLink = async () => {
     const url = window.location.href;
@@ -322,6 +515,94 @@ export default function ReportPage() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {(historyLoading || history.length > 0) && (
+            <div className="p-6 rounded-lg bg-bg-secondary border border-border mb-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+                <h3 className="text-lg font-semibold text-text-primary">Trend &amp; Drift Analytics</h3>
+                {report.historyKey && (
+                  <p className="text-xs text-text-muted">Profile Key: {report.historyKey.slice(0, 12)}</p>
+                )}
+              </div>
+              {historySummary && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <TrendCard
+                    label="Latest Score"
+                    value={`${historySummary.latestScore}/100`
+                    }
+                    delta={historySummary.deltaScore}
+                  />
+                  <TrendCard
+                    label="Issues Delta"
+                    value={`${historySummary.issuesDelta > 0 ? '+' : ''}${historySummary.issuesDelta}`}
+                    delta={historySummary.issuesDelta}
+                  />
+                  <TrendStatus
+                    changed={historySummary.fingerprintChanged}
+                  />
+                </div>
+              )}
+              {historyLoading && (
+                <p className="text-text-muted text-sm">Loading trend history…</p>
+              )}
+              {!historyLoading && history.length === 0 && (
+                <p className="text-text-muted text-sm">No previous scans available for this profile yet.</p>
+              )}
+              {!historyLoading && history.length > 0 && (
+                <div className="space-y-4">
+                  {history.map((entry) => (
+                    <div
+                      key={entry.sessionId}
+                      className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 rounded-lg bg-bg-primary border border-border/60"
+                    >
+                      <div>
+                        <p className="text-xs text-text-muted uppercase tracking-wide">
+                          {formatHistoryDate(entry.createdAt)}
+                        </p>
+                        <p className="text-lg font-semibold text-text-primary">
+                          Score {entry.trustScore}
+                          <span
+                            className={`ml-2 text-sm font-mono ${
+                              entry.deltas.score >= 0 ? 'text-success' : 'text-error'
+                            }`}
+                          >
+                            ({entry.deltas.score >= 0 ? '+' : ''}
+                            {entry.deltas.score})
+                          </span>
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <span
+                          className={`px-3 py-1 rounded-full border ${
+                            entry.deltas.issues <= 0
+                              ? 'border-success/40 text-success'
+                              : 'border-error/40 text-error'
+                          }`}
+                        >
+                          Issues {entry.issuesCount}
+                          {entry.deltas.issues !== 0 && (
+                            <span className="ml-1">
+                              ({entry.deltas.issues > 0 ? '+' : ''}
+                              {entry.deltas.issues})
+                            </span>
+                          )}
+                        </span>
+                        <span className="px-3 py-1 rounded-full border border-border text-text-secondary">
+                          {entry.deltas.fingerprintChanged ? 'Fingerprint drift' : 'Fingerprint stable'}
+                        </span>
+                        {entry.layerChanges.slice(0, 2).map((change) => (
+                          <span key={change.layer} className="px-3 py-1 rounded-full bg-bg-secondary/80 text-text-muted border border-border">
+                            {change.layer}: {change.delta >= 0 ? '+' : ''}
+                            {change.delta}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
