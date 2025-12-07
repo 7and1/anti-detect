@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import { Header } from '@/components/ui/Header';
 import { Footer } from '@/components/ui/Footer';
 
@@ -839,7 +840,7 @@ export default function HeadersPage() {
                 In theory, this limits fingerprinting—servers can't access detailed device info without asking. In practice, major tracking networks <em>always</em> request high-entropy hints. According to The Privacy Sandbox research on "Browser Fingerprinting & Client Hints," sites using fingerprinting scripts request all available Client Hints, combining them into a fingerprint that's actually <em>more</em> detailed than the old User-Agent. A fingerprint combining Sec-CH-UA, Sec-CH-UA-Platform-Version, Sec-CH-UA-Arch, and Sec-CH-UA-Full-Version-List provides enough entropy to uniquely identify most users.
               </p>
               <p className="leading-relaxed">
-                For anti-detect browsers and automation tools, Client Hints add complexity. You can't just spoof the User-Agent anymore—you need to ensure Client Hints match. If your User-Agent says "Chrome 120 on Windows 11" but your Sec-CH-UA-Platform-Version says "10.0.19045" (Windows 10 build number), detection systems catch the inconsistency immediately. Every fingerprint attribute must align perfectly—headers, canvas, WebGL (see our <a href="/tools/canvas" className="text-accent hover:underline">Canvas Test</a> and <a href="/tools/webgl" className="text-accent hover:underline">WebGL Test</a>), fonts, and more.
+                For anti-detect browsers and automation tools, Client Hints add complexity. You can't just spoof the User-Agent anymore—you need to ensure Client Hints match. If your User-Agent says "Chrome 120 on Windows 11" but your Sec-CH-UA-Platform-Version says "10.0.19045" (Windows 10 build number), detection systems catch the inconsistency immediately. Every fingerprint attribute must align perfectly—headers, canvas, WebGL (see our <Link href="/tools/canvas" className="text-accent hover:underline">Canvas Test</Link> and <Link href="/tools/webgl" className="text-accent hover:underline">WebGL Test</Link>), fonts, and more.
               </p>
             </div>
 
@@ -851,7 +852,7 @@ export default function HeadersPage() {
                 Headless browsers used to have obvious header signatures. Puppeteer's default User-Agent included "HeadlessChrome" in the string—literally advertising itself as automation. Selenium's default headers differed subtly from real browsers in the Accept header ordering. Modern automation frameworks have improved, but detection systems evolved faster.
               </p>
               <p className="leading-relaxed">
-                Today's sophisticated detection doesn't just check individual headers—it analyzes <em>consistency</em> across all fingerprinting vectors. Your headers say macOS but your <a href="/tools/fonts" className="text-accent hover:underline">font list</a> includes Windows-specific fonts? Blocked. Your User-Agent says mobile but your screen resolution is desktop-sized? Blocked. Your Accept-Language is Chinese but you're accessing the site from a US IP with English content preferences? Highly suspicious.
+                Today's sophisticated detection doesn't just check individual headers—it analyzes <em>consistency</em> across all fingerprinting vectors. Your headers say macOS but your <Link href="/tools/fonts" className="text-accent hover:underline">font list</Link> includes Windows-specific fonts? Blocked. Your User-Agent says mobile but your screen resolution is desktop-sized? Blocked. Your Accept-Language is Chinese but you're accessing the site from a US IP with English content preferences? Highly suspicious.
               </p>
               <p className="leading-relaxed">
                 The 2025 ACM Web Conference paper "The First Early Evidence of the Use of Browser Fingerprinting for Online Tracking" demonstrated that fingerprinting can bypass GDPR and CCPA opt-outs entirely. Researchers found that major advertising networks use header analysis alongside canvas and WebGL to track users who've explicitly rejected cookies. The trackers argue headers are "necessary technical information," not tracking data subject to privacy laws—a legal gray area that privacy advocates are fighting.
@@ -878,7 +879,7 @@ export default function HeadersPage() {
                 The future of header privacy is uncertain. Browser vendors are caught between legitimate web functionality (which requires device information) and user privacy (which requires hiding that information). The current trajectory—replacing simple headers with complex Client Hints—seems to favor trackers. Understanding HTTP headers fingerprinting is crucial for both privacy protection and web automation success.
               </p>
               <p className="leading-relaxed">
-                Want to dive deeper? Check our comprehensive guide on <a href="/learn/http-headers" className="text-accent hover:underline">HTTP Headers Defense Strategies</a> and explore how headers combine with <a href="/tools/audio" className="text-accent hover:underline">Audio Fingerprinting</a> and other techniques to create a complete digital fingerprint that tracks you across the web.
+                Want to dive deeper? Check our comprehensive guide on <Link href="/learn/http-headers" className="text-accent hover:underline">HTTP Headers Defense Strategies</Link> and explore how headers combine with <Link href="/tools/audio" className="text-accent hover:underline">Audio Fingerprinting</Link> and other techniques to create a complete digital fingerprint that tracks you across the web.
               </p>
             </div>
           </div>

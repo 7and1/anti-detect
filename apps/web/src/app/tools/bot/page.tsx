@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import { Header } from '@/components/ui/Header';
 import { Footer } from '@/components/ui/Footer';
 
@@ -864,7 +865,7 @@ export default function BotDetectionPage() {
                     Bot detection is just one part of browser fingerprinting and online privacy. To understand how all these techniques work together, check out our comprehensive guides.
                   </p>
                   <div className="flex flex-col gap-3">
-                    <a
+                    <Link
                       href="/learn/bot-detection"
                       className="inline-flex items-center gap-2 text-accent hover:underline font-semibold"
                     >
@@ -877,8 +878,8 @@ export default function BotDetectionPage() {
                           d="M9 5l7 7-7 7"
                         />
                       </svg>
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/learn/browser-fingerprinting"
                       className="inline-flex items-center gap-2 text-accent hover:underline font-semibold"
                     >
@@ -891,7 +892,7 @@ export default function BotDetectionPage() {
                           d="M9 5l7 7-7 7"
                         />
                       </svg>
-                    </a>
+                    </Link>
                   </div>
                   <p className="text-sm text-text-muted mt-4">
                     Data sources: <a href="https://www.imperva.com/blog/2025-imperva-bad-bot-report-how-ai-is-supercharging-the-bot-threat/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Imperva Bad Bot Report 2025</a>, <a href="https://doubleverify.com/ai-crawlers-and-scrapers-are-contributing-to-an-increase-in-general-invalid-traffic/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">DoubleVerify AI Scrapers Research</a>, <a href="https://www.f5.com/labs/articles/threat-intelligence/what-are-scrapers-and-why-should-you-care" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">F5 Labs Scraper Analysis</a>, <a href="https://link.springer.com/chapter/10.1007/978-3-031-70245-7_10" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Springer: Browser Automation Study 2024</a>, <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11962364/" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">PMC: Bot Detection & GDPR Compliance</a>, DiVA Portal ML Detection Research

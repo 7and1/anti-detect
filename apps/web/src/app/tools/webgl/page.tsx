@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import { Header } from '@/components/ui/Header';
 import { Footer } from '@/components/ui/Footer';
 
@@ -616,7 +617,7 @@ export default function WebGLPage() {
                 Even privacy-focused techniques like browser profiles or virtual machines don't fully solve this. If you run multiple virtual machines on the same host and give them GPU access, they'll all report the same or similar GPU fingerprints because they're ultimately using the same physical hardware. The only way to get a different WebGL fingerprint is to actually use different hardware.
               </p>
               <p className="leading-relaxed">
-                This is why professional multi-accounting and anti-detect browsing requires either real device farms (physically separate machines with different GPUs) or sophisticated software spoofing that intercepts WebGL API calls and returns fake but consistent values. But spoofing has its own challenges—you need to return values that make sense together, that match your other fingerprints (like canvas, which is closely related—see our <a href="/tools/canvas" className="text-accent hover:underline">Canvas Fingerprint Test</a>), and that don't include known "fake" patterns that detection systems have catalogued.
+                This is why professional multi-accounting and anti-detect browsing requires either real device farms (physically separate machines with different GPUs) or sophisticated software spoofing that intercepts WebGL API calls and returns fake but consistent values. But spoofing has its own challenges—you need to return values that make sense together, that match your other fingerprints (like canvas, which is closely related—see our <Link href="/tools/canvas" className="text-accent hover:underline">Canvas Fingerprint Test</Link>), and that don't include known "fake" patterns that detection systems have catalogued.
               </p>
             </div>
 
@@ -640,7 +641,7 @@ export default function WebGLPage() {
                 The nuclear option is using real browsers on real devices with real, diverse hardware. Device farms where each browser instance runs on physically separate hardware with different GPU models are nearly impossible to detect through WebGL fingerprinting. But this approach is expensive and doesn't scale well.
               </p>
               <p className="leading-relaxed">
-                Want to understand how WebGL fingerprinting fits into the broader fingerprinting landscape? Check our complete guide on <a href="/learn/webgl-fingerprinting" className="text-accent hover:underline">WebGL Fingerprinting Defense Strategies</a> and explore related techniques like <a href="/tools/fonts" className="text-accent hover:underline">Font Fingerprinting</a> and <a href="/tools/audio" className="text-accent hover:underline">Audio Fingerprinting</a> that use similar hardware-based tracking approaches.
+                Want to understand how WebGL fingerprinting fits into the broader fingerprinting landscape? Check our complete guide on <Link href="/learn/webgl-fingerprinting" className="text-accent hover:underline">WebGL Fingerprinting Defense Strategies</Link> and explore related techniques like <Link href="/tools/fonts" className="text-accent hover:underline">Font Fingerprinting</Link> and <Link href="/tools/audio" className="text-accent hover:underline">Audio Fingerprinting</Link> that use similar hardware-based tracking approaches.
               </p>
             </div>
           </div>

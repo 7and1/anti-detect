@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { Header } from '@/components/ui/Header';
 import { Footer } from '@/components/ui/Footer';
 
@@ -589,7 +590,7 @@ export default function AudioPage() {
                 The technique is particularly popular for fraud detection and bot prevention. Legitimate security companies use audio fingerprinting alongside canvas, WebGL, and behavioral analysis to distinguish real users from bots. If a visitor's fingerprint suddenly changes between page loads (something that would never happen naturally), it suggests automation tools or fingerprint spoofing. Financial services use it to detect account takeover—if someone logs into your bank account from a device with a completely different audio fingerprint, that's a red flag.
               </p>
               <p className="leading-relaxed">
-                But the same technology enables cross-site tracking. Ad networks use audio fingerprints (combined with other techniques—see our <a href="/tools/canvas" className="text-accent hover:underline">Canvas Test</a> and <a href="/tools/webgl" className="text-accent hover:underline">WebGL Test</a>) to build profiles that follow you across the web. They can track you even when you clear cookies, use different browsers, or connect from different networks. The fingerprint is tied to your physical device, making it extremely persistent.
+                But the same technology enables cross-site tracking. Ad networks use audio fingerprints (combined with other techniques—see our <Link href="/tools/canvas" className="text-accent hover:underline">Canvas Test</Link> and <Link href="/tools/webgl" className="text-accent hover:underline">WebGL Test</Link>) to build profiles that follow you across the web. They can track you even when you clear cookies, use different browsers, or connect from different networks. The fingerprint is tied to your physical device, making it extremely persistent.
               </p>
             </div>
 
@@ -601,7 +602,7 @@ export default function AudioPage() {
                 If you're using Selenium, Puppeteer, or Playwright for web automation, audio fingerprinting is a significant detection vector. Headless browsers often lack proper audio stack implementation or return default values that differ from real browsers. Even headed automation tools can have audio fingerprints that don't match typical user configurations. If your script runs on a Linux server with ALSA audio drivers while claiming to be Windows 10 with Chrome, the audio fingerprint will expose the lie.
               </p>
               <p className="leading-relaxed">
-                Some automation frameworks try to mock the Web Audio API, returning fake but plausible values. But sophisticated detection systems test for consistency across multiple fingerprinting vectors. Your audio sample rate should match your claimed operating system. If you report 48,000 Hz (common on Windows) but your <a href="/tools/headers" className="text-accent hover:underline">HTTP headers</a> and other fingerprints suggest macOS (which typically uses 44,100 Hz), that inconsistency triggers alerts.
+                Some automation frameworks try to mock the Web Audio API, returning fake but plausible values. But sophisticated detection systems test for consistency across multiple fingerprinting vectors. Your audio sample rate should match your claimed operating system. If you report 48,000 Hz (common on Windows) but your <Link href="/tools/headers" className="text-accent hover:underline">HTTP headers</Link> and other fingerprints suggest macOS (which typically uses 44,100 Hz), that inconsistency triggers alerts.
               </p>
               <p className="leading-relaxed">
                 The arms race continues. Detection companies analyze audio fingerprints from millions of real devices and flag patterns that don't match known configurations. If your automation tool returns an audio fingerprint that no real device produces, you're busted. This is why professional anti-detect browsers maintain databases of genuine device fingerprints and ensure every spoofed attribute is internally consistent.
@@ -625,7 +626,7 @@ export default function AudioPage() {
                 The nuclear option is using real devices with diverse hardware. If each automation instance runs on physically different hardware, the audio fingerprints are naturally unique and genuine. But this doesn't scale well—you'd need dozens or hundreds of physical devices for serious operations, which gets expensive fast.
               </p>
               <p className="leading-relaxed">
-                Understanding audio fingerprinting is crucial because it's part of a larger tracking ecosystem. Websites rarely use just one technique—they combine audio with canvas, WebGL, fonts, and more to create a comprehensive fingerprint. Check our guide on <a href="/learn/audio-fingerprinting" className="text-accent hover:underline">Audio Fingerprinting Defense Strategies</a> to learn advanced protection techniques and understand how audio fingerprinting fits into the complete browser fingerprinting picture.
+                Understanding audio fingerprinting is crucial because it's part of a larger tracking ecosystem. Websites rarely use just one technique—they combine audio with canvas, WebGL, fonts, and more to create a comprehensive fingerprint. Check our guide on <Link href="/learn/audio-fingerprinting" className="text-accent hover:underline">Audio Fingerprinting Defense Strategies</Link> to learn advanced protection techniques and understand how audio fingerprinting fits into the complete browser fingerprinting picture.
               </p>
             </div>
           </div>
